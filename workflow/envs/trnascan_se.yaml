@@ -1,0 +1,6 @@
+channels:
+  - default
+  - bioconda
+  - conda-forge
+dependencies:
+  - trnascan-se = 2.0.11

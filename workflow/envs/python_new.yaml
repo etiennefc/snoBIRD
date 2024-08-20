@@ -1,0 +1,25 @@
+channels:
+  - default
+  - bioconda
+  - conda-forge
+  - pytorch
+dependencies:
+  - python = 3.10.8 
+  - matplotlib = 3.6.2
+  - numpy = 1.23.5
+  - pandas = 1.5.2
+  - scipy = 1.9.3
+  - seaborn = 0.12.1
+  - scikit-learn = 1.1.3
+  - pybedtools = 0.9.0
+  - shap = 0.41.0
+  - gtfparse = 1.2.1
+  - pytorch = 2.0.0
+  - torchvision
+  - optuna = 3.1.1
+  - regex = 2023.6.3
+  - viennarna = 2.5.1
+  - upsetplot = 0.8.0
+  - pomegranate = 0.14.8
+  - transformers = 4.31.0
+  - biopython = 1.81

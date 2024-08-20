@@ -1,0 +1,5 @@
+channels:
+  - default
+  - bioconda
+dependencies:
+  - infernal = 1.1.2 

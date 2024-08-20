@@ -1,0 +1,372 @@
+{
+  "species": ["macaca_mulatta", "tetrahymena_thermophila", "ornithorhynchus_anatinus", "gallus_gallus", 
+              "caenorhabditis_elegans", "drosophila_melanogaster", "leishmania_major", 
+              "dictyostelium_discoideum", "giardia_lamblia", "arabidopsis_thaliana", "oryza_sativa", 
+              "ostreococcus_tauri", "aspergillus_fumigatus", "neurospora_crassa", "candida_albicans"],
+  "sno_fasta": ["macaca_mulatta_cd_Zhang_2010", "tetrahymena_thermophila_cd_Andersen_2012", 
+              "ornithorhynchus_anatinus_cd_Schmitz_2008", "gallus_gallus_cd_Shao_2009", 
+              "caenorhabditis_elegans_cd_Zemann_2006", 
+              "leishmania_major_cd_Liang_2007", "dictyostelium_discoideum_cd_Aspegren_2004", 
+              "giardia_lamblia_cd_Yang_2005", "arabidopsis_thaliana_cd_Barneche_2001", 
+              "arabidopsis_thaliana_cd_Chen_2009", "oryza_sativa_cd_Chen_2003", 
+              "ostreococcus_tauri_cd_Bousquet_2020", "aspergillus_fumigatus_cd_Jochl_2008", 
+              "neurospora_crassa_cd_Liu_2009", "candida_albicans_cd_Mitrovich_2010"],
+  "species_tgirt": ["homo_sapiens", "mus_musculus", "tetrahymena_thermophila", 
+                  "saccharomyces_cerevisiae", "schizosaccharomyces_pombe", "drosophila_melanogaster"],
+  "missing_tRNA_species": ["ostreococcus_tauri", "giardia_lamblia", "dictyostelium_discoideum", 
+                            "gallus_gallus", "tetrahymena_thermophila", "macaca_mulatta", 
+                            "ornithorhynchus_anatinus"],
+  "fixed_length": [194],
+  "cd_predictors": ["snoreport2", "snoscan", "infernal_rfam"],
+  "simple_models": ["logreg", "svc", "rf", "gbm", "knn"],
+  "intrinsic_feature": ["box_score", "terminal_stem_mfe", "structure_mfe", "length"],
+  "fold_num": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "hyperparameter_space":
+  {
+    "logreg":
+    {
+      "C": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+      "solver": ["newton-cg", "lbfgs", "liblinear", "sag", "saga"]
+    },
+    "svc":
+    {
+      "C": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+      "gamma": ["auto", "scale"],
+      "kernel": ["linear", "poly", "rbf", "sigmoid"],
+      "degree": [3, 4, 5]
+    },
+    "rf":
+    {
+      "n_estimators": [10, 100, 1000, 5000],
+      "max_depth": [1, 2, 3, 4, 5],
+      "min_samples_split": [2, 5, 10],
+      "min_samples_leaf": [1, 2, 3, 4]
+    },
+    "gbm":
+    {
+      "loss": ["log_loss", "exponential"],
+      "n_estimators": [10, 100, 1000, 5000],
+      "max_depth": [1, 2, 3, 4, 5],
+      "min_samples_split": [2, 5, 10],
+      "min_samples_leaf": [1, 2, 3, 4]
+    },
+    "knn":
+    {
+      "n_neighbors": [2, 5, 10, 30],
+      "weights": ["uniform", "distance"],
+      "leaf_size": [5, 10, 30],
+      "p": [1, 2]
+    }
+  },
+  "hyperparameter_space_LSTM":
+  {
+    "n_layers": [1, 2],
+    "n_nodes": [2, 200],
+    "optimizer": ["Adam", "SGD", "AdamW"],
+    "learning_rate": [0.0001, 0.1],
+    "dropout_rate": [0.2, 0.8]
+  },
+  "hyperparameter_space_LSTM_complex":
+  {
+    "n_layers": [2, 3],
+    "n_nodes": [200, 300],
+    "optimizer": ["Adam", "SGD", "AdamW"],
+    "learning_rate": [0.0001, 0.1],
+    "dropout_rate": [0.3, 0.8]
+  },
+  "hyperparameter_space_GRU":
+  {
+    "n_layers": [1, 3],
+    "n_nodes": [2, 400],
+    "optimizer": ["Adam", "SGD"],
+    "learning_rate": [0.00001, 0.1],
+    "dropout_rate": [0.2, 0.8]
+  },
+  "hyperparameter_space_GRU_simplified":
+  {
+    "n_layers": [1, 2],
+    "n_nodes": [2, 100],
+    "optimizer": ["Adam", "SGD"],
+    "learning_rate": [0.001, 0.1],
+    "dropout_rate": [0.2, 0.8]
+  }, 
+  "hyperparameter_space_GRU_simplified2":
+  {
+    "n_layers": [1, 2],
+    "n_nodes": [2, 100],
+    "optimizer": ["Adam", "SGD"],
+    "learning_rate": [0.001, 0.1],
+    "dropout_rate": [0.5, 0.8]
+  },
+  "hyperparameter_space_transformer_2_classes":
+  {
+    "batch_size": [16, 32, 100],
+    "learning_rate": [0.00002, 0.00003, 0.00004, 0.00005]
+  },
+  "rDNA_ncbi_ids": ["KT445934.2", "HQ141459.1", "AM168071.1", "JF931128.1", "KX061890.1", "X03680.1",
+                  "OP829811.1", "XR_002460811.1", "XR_005248692.1", "XR_005248693.1", "7PWO_1", "X54512.1",
+                  "XR_003764684.1", "LC086814.1", "AJ311679.1", "X52320.1", "X15707.1", "NR_146144", 
+                  "NR_003280.2", "NR_003278.3", "NR_003279.1", "LC756999.1", "AY586729.1", "Y15814.1"],
+  "species_short_name":
+  {
+    "O_anatinus": "ornithorhynchus_anatinus",
+    "M_musculus": "mus_musculus",
+    "H_sapiens": "homo_sapiens",
+    "M_mulatta": "macaca_mulatta",
+    "A_thaliana": "arabidopsis_thaliana",
+    "O_sativa": "oryza_sativa",
+    "C_elegans": "caenorhabditis_elegans",
+    "L_major": "leishmania_major",
+    "G_gallus": "gallus_gallus",
+    "D_melanogaster": "drosophila_melanogaster", 
+    "S_cerevisiae": "saccharomyces_cerevisiae",
+    "T_thermophila": "tetrahymena_thermophila",
+    "G_lamblia": "giardia_lamblia",
+    "D_discoideum": "dictyostelium_discoideum",
+    "O_tauri": "ostreococcus_tauri",
+    "A_fumigatus": "aspergillus_fumigatus",
+    "N_crassa": "neurospora_crassa",
+    "C_albicans": "candida_albicans"
+  },
+  "dataset_attributes": 
+  {
+    "macaca_mulatta_cd_Zhang_2010": 
+    {
+      "genome_version": "Mmul_10",
+      "species_name": "M_mulatta",
+      "species_classification": "Animal",
+      "validation_method": "cDNA_library;Northern_blot;Infernal;SnoReport",
+      "article": "Zhang_et_al_BMC_Genomics_2010"
+    },
+    "tetrahymena_thermophila_cd_Andersen_2012": 
+    {
+      "genome_version": "TGD_2020",
+      "species_name": "T_thermophila",
+      "species_classification": "Protist",
+      "validation_method": "cDNA_library;Infernal",
+      "article": "Andersen_et_al_NAR_2012"
+    },
+    "ornithorhynchus_anatinus_cd_Schmitz_2008": 
+    {
+      "genome_version": "OrnAna1",
+      "species_name": "O_anatinus",
+      "species_classification": "Animal",
+      "validation_method": "cDNA_library;Manual_annotation",
+      "article": "Schmitz_et_al_NAR_2008"
+    },
+    "gallus_gallus_cd_Shao_2009": 
+    {
+      "genome_version": "GRCg7b",
+      "species_name": "G_gallus",
+      "species_classification": "Animal",
+      "validation_method": "cDNA_library;RT-PCR;snoSeeker",
+      "article": "Shao_et_al_BMC_Genomics_2009"
+    },
+    "caenorhabditis_elegans_cd_Zemann_2006": 
+    {
+      "genome_version": "WBcel235",
+      "species_name": "C_elegans",
+      "species_classification": "Animal",
+      "validation_method": "cDNA_library;Northern_blot;Manual_annotation",
+      "article": "Zemann_et_al_NAR_2006"
+    },
+    "drosophila_melanogaster_cd_Huang_2005": 
+    {
+      "genome_version": "BDGP6.32",
+      "species_name": "D_melanogaster",
+      "species_classification": "Animal",
+      "validation_method": "cDNA_library;Northern_blot;Manual_annotation",
+      "article": "Huang_et_al_RNA_2005"
+    },
+    "leishmania_major_cd_Liang_2007": 
+    {
+      "genome_version": "ASM272v2",
+      "species_name": "L_major",
+      "species_classification": "Protist",
+      "validation_method": "sequence_alignment;Northern_blot;Manual_annotation",
+      "article": "Liang_et_al_Eukaryotic_Cell_2007"
+    },
+    "dictyostelium_discoideum_cd_Aspegren_2004": 
+    {
+      "genome_version": "dicty_2.7",
+      "species_name": "D_discoideum",
+      "species_classification": "Protist",
+      "validation_method": "cDNA_library;Northern_blot;Manual_annotation",
+      "article": "Aspegren_et_al_NAR_2004"
+    },
+    "giardia_lamblia_cd_Yang_2005": 
+    {
+      "genome_version": "GL2",
+      "species_name": "G_lamblia",
+      "species_classification": "Protist",
+      "validation_method": "cDNA_library;Northern_blot;Manual_annotation",
+      "article": "Yang_et_al_BBRC_2005"
+    },
+    "arabidopsis_thaliana_cd_Barneche_2001": 
+    {
+      "genome_version": "TAIR10",
+      "species_name": "A_thaliana",
+      "species_classification": "Plant",
+      "validation_method": "snoRNA_prediction;Primer_extension",
+      "article": "Barneche_et_al_JMB_2001"
+    },
+    "arabidopsis_thaliana_cd_Chen_2009": 
+    {
+      "genome_version": "TAIR10",
+      "species_name": "A_thaliana",
+      "species_classification": "Plant",
+      "validation_method": "small_RNA_seq_reanalysis;Northern_blot;Manual_annotation",
+      "article": "Chen_et_al_NAR_2009"
+    },
+    "oryza_sativa_cd_Chen_2003": 
+    {
+      "genome_version": "IRGSP-1.0",
+      "species_name": "O_sativa",
+      "species_classification": "Plant",
+      "validation_method": "cDNA_library;snoRNA_prediction",
+      "article": "Chen_et_al_NAR_2003"
+    },
+    "ostreococcus_tauri_cd_Bousquet_2020": 
+    {
+      "genome_version": "version_140606",
+      "species_name": "O_tauri",
+      "species_classification": "Plant",
+      "validation_method": "mncRNA-Seq;Northern_blot",
+      "article": "Bousquet_et_al_NARGAB_2020"
+    },
+    "aspergillus_fumigatus_cd_Jochl_2008":
+    {
+      "genome_version": "ASM265v1",
+      "species_name": "A_fumigatus",
+      "species_classification": "Fungi",
+      "validation_method": "cDNA_library;Northern_blot;snoReport",
+      "article": "Jochl_et_al_NAR_2008"
+    },
+    "neurospora_crassa_cd_Liu_2009":
+    {
+      "genome_version": "NC12",
+      "species_name": "N_crassa",
+      "species_classification": "Fungi",
+      "validation_method": "cDNA_library;Northern_blot;RT-PCR;snoscan",
+      "article": "Liu_et_al_BMC_Genomics_2009"
+    },
+    "candida_albicans_cd_Mitrovich_2010":
+    {
+      "genome_version": "GCA000182965v3;Ca22",
+      "species_name": "C_albicans",
+      "species_classification": "Fungi",
+      "validation_method": "cDNA_library;Northern_blot;snoscan",
+      "article": "Mitrovich_et_al_Science_2010"
+    },
+    "saccharomyces_cerevisiae_cd_TGIRT": 
+    {
+      "genome_version": "R64-1-1",
+      "species_name": "S_cerevisiae",
+      "species_classification": "Fungi"
+    },
+    "homo_sapiens_cd_TGIRT": 
+    {
+      "genome_version": "GRCh38",
+      "species_name": "H_sapiens",
+      "species_classification": "Animal"
+    },
+    "mus_musculus_cd_TGIRT": 
+    {
+      "genome_version": "GRCh39",
+      "species_name": "M_musculus",
+      "species_classification": "Animal"
+    }
+  },
+  "sno_type_df": 
+  {
+    "homo_sapiens": "data/references/sno_type_df/homo_sapiens_snotype_snoDB.tsv",
+    "mus_musculus": "data/references/sno_type_df/mus_musculus_snotype_rnacentral.tsv",
+    "saccharomyces_cerevisiae": "data/references/sno_type_df/saccharomyces_cerevisiae_snotype_umass.tsv"
+  },
+  "colors":
+  {
+    "percent_colors": ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"],
+    "predictors":
+    {
+      "snoreport2": "#fda47a",
+      "snoscan": "#80b1d3",
+      "infernal_rfam": "#d73027",
+      "snoBIRD": "#66a61e"
+    },
+    "simple_models":
+    {
+      "logreg": "#feb24c",
+      "svc": "#fd8d3c",
+      "rf": "#fc4e2a",
+      "gbm": "#e31a1c",
+      "knn": "#b10026"
+    },
+    "target":
+    {
+      "expressed_CD_snoRNA": "#abca77ff",
+      "snoRNA_pseudogene": "#824c92ff",
+      "negatives": "#9ebcda"
+    },
+    "species":
+    {
+      "arabidopsis_thaliana": "#a6cee3",
+      "caenorhabditis_elegans": "#1f78b4",
+      "dictyostelium_discoideum": "#b2df8a",
+      "drosophila_melanogaster": "#33a02c",
+      "gallus_gallus": "#fb9a99",
+      "giardia_lamblia": "#e31a1c",
+      "homo_sapiens": "#fdbf6f",
+      "leishmania_major": "#ff7f00",
+      "macaca_mulatta": "#cab2d6",
+      "mus_musculus": "#6a3d9a",
+      "ornithorhynchus_anatinus": "#ffff99",
+      "oryza_sativa": "#b15928",
+      "ostreococcus_tauri": "lightgrey",
+      "saccharomyces_cerevisiae": "grey",
+      "tetrahymena_thermophila": "black",
+      "aspergillus_fumigatus": "darkred",
+      "neurospora_crassa": "olive",
+      "candida_albicans": "navy"
+    },
+    "biotypes":
+    {
+      "HACA_snoRNA": "#66a61e",
+      "expressed_CD_snoRNA": "orange",
+      "pre_miRNA": "#e6ab02",
+      "random_exonic_region": "#1b9e77",
+      "random_intergenic_region": "#d95f02",
+      "random_intronic_region": "#7570b3",
+      "shuffled_expressed_CD_snoRNA": "#e7298a",
+      "snRNA": "#a6761d",
+      "tRNA": "#666666"
+    },
+    "confusion_value":
+    {
+      "TP": "#f1b6da",
+      "TN": "#b8e186",
+      "FP": "#4dac26",
+      "FN": "#d01c8b"
+    }
+  },
+  "path":
+  {
+    "genome_v101": ""
+  },
+  "download":
+  {
+    "blat": "rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/blat/",
+    "rfam_cm": "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz",
+    "t_thermophila_genome": "https://zenodo.org/record/7335173/files/t_thermophila_genome.fa",
+    "o_tauri_genome": "https://zenodo.org/record/7361719/files/ostreococcus_tauri_genome.fa",
+    "human_gtf": "https://zenodo.org/record/6799536/files/hg38_Ensembl_V101_Scottlab_2020.gtf",
+    "mouse_gtf": "https://ftp.ensembl.org/pub/release-108/gtf/mus_musculus/Mus_musculus.GRCm39.108.gtf.gz",
+    "tetrahymena_gtf": "https://zenodo.org/record/6391187/files/t_thermophila_complete_2021.gtf",
+    "rnacentral": "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/21.0/genome_coordinates/bed/",
+    "gallus_gallus_gff": "https://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/21.0/genome_coordinates/gff3/gallus_gallus.bGalGal1.mat.broiler.GRCg7b.gff3.gz",
+    "haca_rnacentral": "TO ADD ON ZENODO****",
+    "rDNA": "TO ADD ON ZENODO****",
+    "all_genes_pombe": "https://www.pombase.org/data/names_and_identifiers/gene_IDs_names_products.tsv",
+    "cd_s_pombe_review": "TO ADD ON ZENODO****",
+    "sno_type_rfam": "https://zenodo.org/records/10728477/files/snoRNA_type_rfam_families.tsv"
+  }
+}

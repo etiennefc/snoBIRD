@@ -1,0 +1,109 @@
+import os, glob
+
+configfile: "../config/config.json"
+
+include: "rules/common.smk"
+include: "rules/downloads.smk"
+include: "rules/sno_literature_processing.smk"
+include: "rules/sno_tgirt_seq_processing.smk"
+include: "rules/sno_families.smk"
+include: "rules/negative_examples.smk"
+include: "rules/negative_examples_fixed_length.smk"
+include: "rules/intrinsic_features.smk"
+include: "rules/tune_train_test_sets.smk"
+include: "rules/one_hot_encoding_and_normalization.smk"
+include: "rules/existing_cd_predictors.smk"
+include: "rules/simple_models.smk"
+include: "rules/neural_network.smk"
+include: "rules/LSTM.smk"
+include: "rules/hmm.smk"
+include: "rules/transformer.smk"
+include: "rules/sno_vs_pseudo.smk"
+include: "rules/flanking_nt.smk"
+include: "rules/figures.smk"
+include: "rules/snoBIRD_species.smk"
+
+
+rule all:
+    """ Generate the tuning, training and test sets."""
+    input:
+        #test_set = expand('data/references/positives_and_negatives/initial/initial_test_set_fixed_length_{fixed_length}nt.tsv', **config),
+        #test_set_data_aug = expand('data/references/positives_and_negatives/data_augmentation/test_set_fixed_length_{fixed_length}nt.tsv', **config),
+        cd_pombe_bed = 'data/references/s_pombe/filtered_CD_snoRNAs.bed',
+        #upset = 'results/figures/upset/tool_comparison_s_pombe.svg',
+        bar = 'results/figures/barplot/cerevisiae_predictions.svg',
+        violin = expand('results/figures/violinplot/sno_pseudo_length_per_species_{fixed_length}.svg', **config),
+        density = expand('results/figures/density/terminal_stem_length_distributions_positives_{fixed_length}nt.svg', **config),
+        overlap_infernal_annotated_cd = "results/predictions/infernal_rfam/S_pombe/overlap_w_annotated_cd.bed",
+        batch_script_snoBIRD = 'results/igv_scripts/snoBIRD_s_pombe.batch',
+        tune_train_combined_second_model = expand('data/references/positives_and_negatives/data_augmentation_equal_ratio_combined_tune_train/training_set_equal_ratio_fixed_length_{fixed_length}nt.tsv', **config)
+
+rule all_cd_predictor_training:
+    """ Create the C/D predictor (based on transformer) 
+        by tuning its hyperparameters, training it and 
+        testing it."""
+    input:
+        test_results_transformer = "test.txt"
+
+rule all_tools_comparison:
+    """ Test the performance of existing C/D predicting 
+        tools on the test set."""
+    input:
+        #matrix_snoreport = expand('results/predictions/snoreport2/fixed_length_{fixed_length}nt/confusion_matrix.tsv', **config)
+        #snoscan_predictions = 'results/predictions/snoBIRD_comparison/snoscan_predicted_cd.txt',
+        #snoreport_predictions = 'results/predictions/snoBIRD_comparison/snoreport2_predicted_cd.txt',
+        #predictions_alignments = 'results/predictions/snoBIRD_comparison/infernal_rfam_predicted_cd.txt',
+        ##infernal_tblout = 'results/predictions/infernal_rfam/S_cerevisiae/predicted_cd.tblout',
+        ##predictions_snoscan = 'results/predictions/snoscan/S_cerevisiae/predicted_cd.txt',
+        ##predictions_sno_report = 'results/predictions/snoreport2/S_cerevisiae/predicted_cd.fa',
+        df_cerevisiae = 'results/predictions/infernal_rfam/S_cerevisiae/precision_recall_cerevisiae.tsv',
+        df_snoscan = 'results/predictions/snoscan/S_cerevisiae/precision_recall_cerevisiae.tsv',
+        df_snoreport = 'results/predictions/snoreport2/S_cerevisiae/precision_recall_cerevisiae.tsv'
+
+
+rule all_downloads:
+    """ Download all tools and reference files needed to 
+        generate the tuning, training and test sets."""
+    input:
+        #blat_installation_file = "data/references/blat/blat_test.txt",
+        #genome = expand('data/references/genome_fa/{species}_genome.fa', **config),
+        #bed = expand('data/references/rnacentral/{species}.bed', 
+        #        species=[sp for sp in config['species']+config['species_tgirt'] 
+        #                if sp not in ['ostreococcus_tauri', 'schizosaccharomyces_pombe', 'candida_albicans']]),
+        #gallus_gallus_gff = "data/references/rnacentral/gallus_gallus_bGalGal1_GRCg7b.gff3",
+        gtf = expand('data/references/gtf/{species}.gtf', species=[sp for sp in 
+                        config['species']+config['species_tgirt'] if sp not in 
+                        ['ostreococcus_tauri']]),
+        #rfam_clans = "data/references/rfam/fam_clans_families.tsv"
+
+rule all_figures:
+    """ Generate all figures from the manuscript."""
+    input:
+        #density = 'results/figures/density/length_selection_positives.svg',
+        ###learning_curve = 'results/figures/lineplot/transformer/190nt/transformer_2_classes_training_f1_score_avg_across_fold.svg',
+        ###learning_curve_sno_pseudo = 'results/figures/lineplot/transformer/190nt/sno_pseudo/transformer_sno_pseudo_training_f1_score_avg_across_fold.svg',
+        ###learning_curve_sno_pseudo_shortened = 'results/figures/lineplot/transformer/190nt/sno_pseudo/shortened/transformer_sno_pseudo_training_f1_score_avg_across_fold.svg',
+        dotplot = expand('results/figures/lineplot/metrics_existing_cd_predictors_{fixed_length}_pseudogenes_only.svg', **config),
+        barplot = 'results/figures/barplot/s_pombe_prediction_time.svg',
+        bed_infernal = 'results/predictions/infernal_rfam/S_pombe/predicted_cd.bed',
+        #c_d_box_location = 'cd_test.tsv',
+        pie_species = expand('results/figures/pie/positives_per_species_{fixed_length}.svg', **config),
+        bar = 'results/figures/barplot/cd_expression_per_species.svg'
+        #pie_fp = expand('results/figures/pie/{error}_per_negative_type_existing_cd_predictors_{fixed_length}.svg', error=['FP', 'FN'], **config),
+        #bar_all = expand('results/figures/barplot/confusion_values_per_species_{cd_predictors}_{fixed_length}.svg', **config),
+        #box_score_density = expand('results/figures/density/box_score_positives_negatives_{fixed_length}nt.svg', **config),
+        #density_stem_length = expand('results/figures/density/terminal_stem_length_distributions_positives_{fixed_length}nt.svg', **config),
+        #density_structure_stability = expand('results/figures/density/structure_stability_positives_negatives_{fixed_length}nt.svg', **config),
+        #density_terminal_stem_stability = expand('results/figures/density/terminal_stem_stability_positives_negatives_{fixed_length}nt.svg', **config),
+        ##learning_curve = expand('results/figures/lineplot/gru/{fixed_length}nt/added_features/gru_training_f1_score_simplified2_{fixed_length}nt_avg_across_fold.svg', **config),
+        ##learning_curve_half_norm = expand('results/figures/lineplot/gru/{fixed_length}nt/added_features_half_normalized/gru_training_f1_score_simplified_{fixed_length}nt_avg_across_fold.svg', **config)
+        #pie_species = expand('results/figures/pie/positives_per_species_{fixed_length}.svg', **config),
+        #density_conf_val = expand('results/figures/density/{intrinsic_feature}_confusion_value_all_models_{fixed_length}.svg', **config),
+        #upset_TP = expand('results/figures/upset/upset_TP_all_models_{fixed_length}nt_species.svg', **config),
+        #learning_curve_transformer = expand('results/figures/lineplot/transformer/{fixed_length}nt/transformer_training_f1_score_avg_across_fold.svg', **config),
+        ##learning_curve_transformer_w_features = expand('results/figures/lineplot/transformer/{fixed_length}nt/transformer_training_f1_score_avg_across_fold_w_features.svg', **config),
+        #learning_curve_transformer_2_classes = expand('results/figures/lineplot/transformer/211nt/transformer_2_classes_training_f1_score_avg_across_fold.svg', **config),
+        #learning_curve_transformer_w_features_2_classes = expand('results/figures/lineplot/transformer/211nt/transformer_w_features_2_classes_training_f1_score_avg_across_fold.svg', **config)
+
+
+

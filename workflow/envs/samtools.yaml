@@ -1,0 +1,5 @@
+channels:
+  - default
+  - bioconda
+dependencies:
+  - samtools = 1.13

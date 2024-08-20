@@ -1,0 +1,6 @@
+# Snakemake general parameters
+
+use-conda: True
+conda-frontend: mamba
+cores: 1
+rerun-triggers: mtime

@@ -1,0 +1,4 @@
+channels:
+  - bioconda
+dependencies:
+  - snoscan = 1.0
