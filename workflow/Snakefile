@@ -2,6 +2,12 @@ import os, glob
 
 configfile: "../config/config.json"
 
+# Get custom parameters
+step_size = config.get("step_size")
+chunks = config.get("chunks")
+chunk_size = config.get("chunk_size")
+print(step_size, chunks, chunk_size)
+
 include: "rules/common.smk"
 include: "rules/snoBIRD.smk"
 #include: "rules/target_prediction.smk"
@@ -10,7 +16,9 @@ include: "rules/snoBIRD.smk"
 rule all:
     """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
     input:
-        
+
+    # Specify which output will be created depending on the user-defined params
+
 
 
 

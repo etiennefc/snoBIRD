@@ -1,0 +1,2 @@
+workflow/.snakemake/
+workflow/scripts/python/__pycache__/
