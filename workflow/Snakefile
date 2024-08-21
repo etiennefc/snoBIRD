@@ -9,6 +9,7 @@ chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
 #print(step_size, chunks, chunk_size, input_fasta)
 
+include: "rules/download.smk"
 include: "rules/snoBIRD.smk"
 #include: "rules/target_prediction.smk"
 
@@ -19,6 +20,11 @@ rule all:
         split_chr_dir = "data/references/genome_fa/"
     # Specify which output will be created depending on the user-defined params
 
+rule all_downloads:
+    """ Download all models that constitute SnoBIRD."""
+    input:
+        model1 = "data/references/models/snoBIRD_first_model.pt",
+        model2 = "data/references/models/snoBIRD_second_model.pt"
 
 
 

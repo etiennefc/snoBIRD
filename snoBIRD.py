@@ -2,7 +2,22 @@
 import sys
 import subprocess as sp
 import argparse
+import os
 
+def find_download(dir_="workflow/data/references/models/", quiet=False):
+    "Find if SnoBIRD models have already been downloaded."
+    model_download = "will be been downloaded!"
+    model_download_bool = False
+    if os.path.exists(dir_):
+        potential_downloads = os.listdir(dir_)
+        if ('snoBIRD_first_model.pt' in potential_downloads) & (
+            'snoBIRD_second_model.pt' in potential_downloads):
+            model_download = ("have already been downloaded. You should now "+
+                        "run SnoBIRD without the -d/--download_model option.")
+            model_download_bool = True
+    if quiet == False:
+        print(f'SnoBIRD models {model_download}')
+    return model_download_bool
 
 
 def main(no_arg=False):
@@ -16,9 +31,9 @@ def main(no_arg=False):
     # Set up required options
     required_group = parser.add_argument_group('Required options')
     required_group.add_argument('--input_fasta', '-i', type=str, 
-        help="FULL path to input fasta file containing the sequence(s) "+
-        "for SnoBIRD to predict on. It can contain one or multiple "+
-        "entries marked by '>' in the same file")
+        help="COMPLETE (absolute) path to input fasta file containing the "+
+        "sequence(s) for SnoBIRD to predict on. It can contain one or "+
+        "multiple entries marked by '>' in the same file")
     
     # Set up optional options
     optional_group = parser.add_argument_group('Available options')
@@ -26,6 +41,9 @@ def main(no_arg=False):
                                 help="Show this help message")
     optional_group.add_argument('--version', '-v', action='store_true', 
                                 help="Show SnoBIRD version")
+    optional_group.add_argument('--download_model', '-d', action='store_true', 
+        help="Download the 2 models that SnoBIRD uses "+
+        "(should be used only once, before running snoBIRD)")
     optional_group.add_argument('--dryrun', '-n', action='store_true', 
         help="Run a snakemake dry run to just print a summary of the DAG of "+
         "jobs and verify job dependencies")
@@ -64,21 +82,39 @@ def main(no_arg=False):
         parser.print_help()
         exit()
 
-    # Test required args
+    ## Build Snakemake command
+    snakemake_cmd = "cd workflow && snakemake --use-conda --cores 1 "
+
+    # Define the required args effects
     config_l = "--config "
     if args.input_fasta:
         config_l += f"input_fasta={args.input_fasta} "
+        if '/' not in args.input_fasta:
+            raise argparse.ArgumentTypeError(f'You must provide the complete'+ 
+                   f' (absolute) path to {args.input_fasta}; for example, '+
+                    '</home/your_username/full_path/to/input_fasta.fa>')
+        if find_download(quiet=True) == False:
+            if not args.download_model:
+                print('SnoBIRD models need to be downloaded first with:\n'+
+                        'python3 snoBIRD.py --download_model')
+                exit()
     else:
-        parser.error('An input fasta file is required. '+
-                    'Please use --i <input_fasta.fa>')
+        if args.download_model:
+            snakemake_cmd += "all_downloads "
+            config_l += "input_fasta=fake_input "
+            find_download()
+        else:
+            parser.error('An input fasta file is required. '+
+                        'Please use --i <input_fasta.fa>')
 
 
     # Define optional args effects
 
-    ## Build Snakemake command
-    snakemake_cmd = "cd workflow && snakemake --use-conda --cores 1 "
-
     ## Add custom parameters to the Snakemake command
+    if args.input_fasta:
+        if args.download_model:
+            snakemake_cmd += "all_downloads "
+            find_download()
     if args.dryrun:
         snakemake_cmd += "-n "
     if args.step_size:

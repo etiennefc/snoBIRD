@@ -15,6 +15,9 @@ rule split_chr:
         "../scripts/python/split_chr.py"
 
 rule genome_prediction:
+    """ Predict with SnoBIRD first model C/D box snoRNA genes in the input 
+        fasta(s)."""
+    
 
 '''
 rule genome_windows_separate_chrom:
