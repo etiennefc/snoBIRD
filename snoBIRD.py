@@ -39,7 +39,8 @@ def main(no_arg=False):
                                 action=argparse.BooleanOptionalAction, 
                                 default=True,
         help="Divide (--chunks) or not (--no-chunks) large fasta files into"+
-            " smaller chunks/fastas to predict more efficiently in parallel "+
+            " smaller chunks/fastas to predict more efficiently in parallel; "+
+            "if --no-chunks, SnoBIRD is less efficient "+
             "(default: --chunks)")
     optional_group.add_argument('--chunk_size', '-cs', type=int, 
         help="Maximal chunk size in megabases (Mb) when --chunks is chosen "+

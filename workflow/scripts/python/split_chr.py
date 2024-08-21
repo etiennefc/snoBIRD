@@ -90,7 +90,6 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
     # For seq > 2*max_size nt
     elif len(seq_) > max_size * 2:
         print(f"\nConverting {chr_id}.fa into {num_files} smaller fasta chunks:")
-        #print(chr_id, len(seq_), num_files)
         prev_size = 0
         for i in range(num_files):
             start = max(0, i * max_size - overlap)
