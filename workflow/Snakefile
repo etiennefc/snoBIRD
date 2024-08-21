@@ -9,7 +9,6 @@ chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
 #print(step_size, chunks, chunk_size, input_fasta)
 
-include: "rules/common.smk"
 include: "rules/snoBIRD.smk"
 #include: "rules/target_prediction.smk"
 
