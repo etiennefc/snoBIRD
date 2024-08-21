@@ -2,7 +2,17 @@ rule split_chr:
     """ Separate a multi-fasta file into separate fasta files per chr and 
         divide into smaller chunks if necessary."""
     input:
-
+        input_fasta = config.get("input_fasta")
+    output:
+        split_chr_dir = directory("data/references/genome_fa/")
+    params:
+        chunks = config.get("chunks"),
+        chunk_size = config.get("chunk_size"),
+        python_script = 'scripts/python/split_chr.py'
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/split_chr.py"
 
 
 '''
