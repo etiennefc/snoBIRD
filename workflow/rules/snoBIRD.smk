@@ -14,6 +14,7 @@ rule split_chr:
     script:
         "../scripts/python/split_chr.py"
 
+rule genome_prediction:
 
 '''
 rule genome_windows_separate_chrom:
