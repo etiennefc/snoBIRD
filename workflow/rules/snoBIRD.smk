@@ -17,6 +17,19 @@ rule split_chr:
 rule genome_prediction:
     """ Predict with SnoBIRD first model C/D box snoRNA genes in the input 
         fasta(s)."""
+    input:
+        input_fasta_dir = rules.split_chr.output.split_chr_dir,
+        snoBIRD = rules.download_models.output.model1
+    output:
+        windows = "results/predictions/first_model/"
+    params:
+        pretrained_model = "zhihan1996/DNA_bert_6",
+        step_size = config.get('step_size'),
+        #fixed_length = 194
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/split_chr.py"
     
 
 '''

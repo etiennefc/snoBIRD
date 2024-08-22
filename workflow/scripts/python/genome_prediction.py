@@ -19,7 +19,7 @@ pretrained_model = str(sys.argv[4])
 window_size = int(sys.argv[5])
 step_size_defined = int(sys.argv[6])
 strand = str(sys.argv[7])
-batch_size = 96
+batch_size = 128
 num_labels = 2
 output = str(sys.argv[3])
 
@@ -37,16 +37,23 @@ torch.set_num_threads(int(N_CPUS))
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Allow TF32 on matrix multiplication to speed up computations
-#torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cuda.matmul.allow_tf32 = True
 
 # Allow TF32 when using cuDNN library (GPU-related library usually automatically installed on the cluster)
-#torch.backends.cudnn.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
+
+# Show packages versions
+sp.call(f'echo PANDAS VERSION: {pd.__version__}', shell=True)
+sp.call(f'echo TORCH VERSION: {torch.__version__}', shell=True)
+sp.call(f'echo NUMPY VERSION: {np.__version__}', shell=True)
+sp.call(f'echo TRANSFORMERS VERSION: {transformers.__version__}', shell=True)
+sp.call(f'echo IS CUDA AVAILABLE?: {torch.cuda.is_available()}', shell=True)
 
 # Load model and tokenizer 
 start_time = time.time()
-tokenizer = AutoTokenizer.from_pretrained('data/references/DNA_bert_6/')
-model = BertForSequenceClassification.from_pretrained('data/references/DNA_bert_6/', num_labels=num_labels)
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+model = BertForSequenceClassification.from_pretrained(pretrained_model, num_labels=num_labels)
 model.load_state_dict(torch.load(model_path)) 
 model.to(device)
 model.classifier.to(device)
@@ -108,16 +115,16 @@ def scan_fasta(chr_dict_, chr_seq, window_size, mini_batch_size, step_size=step_
                     break
             #print(big_batch)  # last big_batch might be smaller than mini_batch_size*mem_batch_size
             kmer_seqs = [seq2kmer(seq, 6) for seq in big_batch]
-            eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True).to(device)
-            eval_dataset = TensorDataset(eval_dataset.input_ids, eval_dataset.attention_mask)
-            eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size)
+            eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True)
+            #eval_dataset = TensorDataset(eval_dataset.input_ids, eval_dataset.attention_mask)
+            #eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size)
 
             # Convert starts/ends lists to tensor
             starts = torch.tensor(starts).to(device)
             ends = torch.tensor(ends).to(device)
 
             # where len(kmer_seqs) = mini_batch_size * mem_batch_size 
-            yield eval_dataloader, starts, ends   
+            yield eval_dataset, starts, ends   
 
         # Keep start/end and strand of sequences in batch
     elif len_chr == window_size: 
@@ -139,7 +146,8 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
         ev_preds = []
         sp.call(f'echo EVAL BATCH {n_batch} {chr_name} {round(n_batch/(total_window/(mem_batch*mini_batch_size))*100, 2)}%', shell=True)
         n_batch += 1
-        for i, ev_batch in enumerate(big_batch[0]):
+        eval_dataset_real = TensorDataset(big_batch[0].input_ids, big_batch[0].attention_mask)
+        for i, ev_batch in enumerate(DataLoader(eval_dataset_real, batch_size=batch_size, num_workers=4)):
             ev_input_ids, ev_attention_mask = ev_batch
             ev_input_ids = ev_input_ids.to(device)
             ev_attention_mask = ev_attention_mask.to(device)
@@ -253,7 +261,7 @@ else:  # predict on both strands
     start_time = time.time()
     seq_pos = chr_dict[chr_name]
     sp.call(f'echo PREDICT ON + STRAND {chr_name}', shell=True)
-    pos_strand_results = predict(chr_dict, seq_pos, window_size, batch_size, '+')
+    pos_strand_results = predict(chr_dict, seq_pos, window_size, batch_size, '+', mem_batch=10)
     seq_neg = chr_dict_neg[chr_name]
     sp.call(f'echo PREDICT ON - STRAND {chr_name}', shell=True)
     neg_strand_results = predict(chr_dict_neg, seq_neg, window_size, batch_size, '-')
