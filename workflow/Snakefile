@@ -1,4 +1,6 @@
-import os, glob
+import os, glob, sys
+import subprocess as sp
+from itertools import groupby
 
 configfile: "../config/config.json"
 
@@ -9,15 +11,20 @@ chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
 #print(step_size, chunks, chunk_size, input_fasta)
 
+
+include: "rules/common.smk"
 include: "rules/download.smk"
 include: "rules/snoBIRD.smk"
 #include: "rules/target_prediction.smk"
 
 
+CHR_ = get_chr_names(input_fasta, chunks, chunk_size)
+
 rule all:
     """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
     input:
-        split_chr_dir = "data/references/genome_fa/"
+        windows = expand("results/predictions/first_model/{chr_}.txt", chr_=CHR_)
+        #split_chr_dir = "data/references/genome_fa/"
     # Specify which output will be created depending on the user-defined params
 
 rule all_downloads:

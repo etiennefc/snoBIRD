@@ -18,19 +18,27 @@ rule genome_prediction:
     """ Predict with SnoBIRD first model C/D box snoRNA genes in the input 
         fasta(s)."""
     input:
-        input_fasta_dir = rules.split_chr.output.split_chr_dir,
+        genome_dir = rules.split_chr.output.split_chr_dir,
         snoBIRD = rules.download_models.output.model1
     output:
-        windows = "results/predictions/first_model/"
+        windows = "results/predictions/first_model/{chr_}.txt"
     params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
+        pretrained_model = config.get('pretrained_model'),  # might have to add it instead of downloading this pretrained model
         step_size = config.get('step_size'),
-        #fixed_length = 194
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/split_chr.py"
+        fixed_length = config.get('fixed_length'),
+        strand = config.get('strand'),
+        python_script = 'scripts/python/genome_prediction.py'
+    #conda:
+    #    "../envs/python_new.yaml"
+    shell:
+        "bash scripts/bash/genome_prediction.sh "
+        "{input.snoBIRD} {input.genome_dir}/fasta/{wildcards.chr_}.fa "
+        "{output.windows} {params.pretrained_model} "
+        "{params.fixed_length} {params.step_size} "
+        "{params.strand} {params.python_script}"
     
+
+
 
 '''
 rule genome_windows_separate_chrom:

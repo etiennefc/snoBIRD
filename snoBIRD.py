@@ -63,6 +63,9 @@ def main(no_arg=False):
     optional_group.add_argument('--chunk_size', '-cs', type=int, 
         help="Maximal chunk size in megabases (Mb) when --chunks is chosen "+
             "(default: 5000000)", default=5000000)
+    optional_group.add_argument('--strand', '-S', type=str, 
+        choices=['both', '+', '-'], 
+        help="Strand on which to predict (default: both)", default="both")
     #parser.add_argument('--run_rule', type=str, help="Rule to run")
     #parser.add_argument('--configfile', type=str, help="Configuration file")
     #parser.add_argument('--cores', type=int, help="Number of cores")
@@ -83,7 +86,8 @@ def main(no_arg=False):
         exit()
 
     ## Build Snakemake command
-    snakemake_cmd = "cd workflow && snakemake --use-conda --cores 1 "
+    snakemake_cmd = ("cd workflow && snakemake --use-conda --cores 1 "+
+                    "--rerun-triggers mtime --conda-frontend mamba ")
 
     # Define the required args effects
     config_l = "--config "
@@ -117,8 +121,13 @@ def main(no_arg=False):
             find_download()
     if args.dryrun:
         snakemake_cmd += "-n "
+        print("\nExecuting the dryrun (getting the number of chr and/or "+
+                "chunks of chr that will be created)...This may take a bit of"+
+                " time for large genomes (ex: <1 min for the human genome).\n")
     if args.step_size:
         config_l += f"step_size={args.step_size} "
+    if args.strand:
+        config_l += f"strand={args.strand} "
     if args.chunks:
         config_l += f"chunks={args.chunks} "
     if args.chunk_size:

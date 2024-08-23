@@ -9,29 +9,6 @@ chunk_size = snakemake.params.chunk_size
 input_ = snakemake.input.input_fasta
 out_ = snakemake.output.split_chr_dir
 
-def validate_fasta(input_fasta, valid_ext=('.fasta', '.fa')):
-    # Validate fasta file name, name of entries and file format
-    print('Validating input fasta file extension and sequence names:\n...\n')
-
-    # Check file extension
-    if not input_fasta.lower().endswith(valid_ext):
-        raise ValueError("Invalid file extension for input fasta. "+
-                f"Expected one of {valid_extensions}.")
-    if input_fasta.lower().endswith('.fasta'):  # change .fasta for .fa
-        sp.call(f'mv {input_fasta} {input_fasta[:-6]}.fa', shell=True)
-    
-    # Check for chr name duplicates
-    names = []
-    for record in SeqIO.parse(input_fasta, "fasta"):
-        # Check for unique sequence names
-        if record.id in names:
-            raise ValueError(f"Duplicate sequence name found: {record.id}. "+
-                    "Please change sequence names to have only unique entries")
-        names.append(record.id)
-    
-    
-    print('Valid input fasta file extension and sequence names!\n')
-
 
 def multi_fasta(input_fasta, output_dir):
     # If multiple sequences in the input fasta file, split in separate 
@@ -72,14 +49,15 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
         # Create first split file
         output_file = f"{input_dir}/{chr_id}_chunk_0.fa"
         with open(output_file, 'w') as f:
-            f.write(f">{chr_id}_chunk_0  prev_size=0\n")
+            f.write(f">{chr_id}_chunk_0  prev_size=0 total_size={len(seq_)}\n")
             f.write(str(seq_[0:(len(seq_)//2)]))
         # Create 2nd split file
         output_file2 = f"{input_dir}/{chr_id}_chunk_1.fa"
         # Nb of nt before that chunk (total of previous chunks)
         prev_size = len(str(seq_[0:(len(seq_)//2)]))
         with open(output_file2, 'w') as f2:
-            f2.write(f">{chr_id}_chunk_1  prev_size={prev_size}\n")
+            f2.write(f">{chr_id}_chunk_1  prev_size={prev_size} "+
+                    f"total_size={len(seq_)}\n")
             f2.write(str(seq_[(len(seq_)//2)-overlap:]))
         print(f"Created: workflow/{output_file} workflow/{output_file2}")
 
@@ -97,7 +75,8 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
             # Create a new file for each split
             output_file3 = f"{input_dir}/{chr_id}_chunk_{i}.fa"
             with open(output_file3, 'w') as f3:
-                f3.write(f">{chr_id}_chunk_{i}  prev_size={prev_size}\n")
+                f3.write(f">{chr_id}_chunk_{i}  prev_size={prev_size}"+
+                        f"total_size={len(seq_)}\n")
                 f3.write(str(seq_[start:end]))
                 print(f"Created: workflow/{output_file3}")
             prev_size += len(seq_[start:end])
@@ -107,8 +86,6 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
     
 
 if __name__ == "__main__":
-    # Validate fasta file
-    validate_fasta(input_)
 
     # Define chunk formation based on the chunks flag
     fasta_dir = multi_fasta(input_, out_)
