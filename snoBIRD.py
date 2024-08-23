@@ -106,6 +106,7 @@ def main(no_arg=False):
         if args.download_model:
             snakemake_cmd += "all_downloads "
             config_l += "input_fasta=fake_input "
+            config_l += "download_model=True "
             find_download()
         else:
             parser.error('An input fasta file is required. '+
@@ -121,7 +122,8 @@ def main(no_arg=False):
             find_download()
     if args.dryrun:
         snakemake_cmd += "-n "
-        print("\nExecuting the dryrun (getting the number of chr and/or "+
+        if not args.download_model:
+            print("\nExecuting the dryrun (getting the number of chr and/or "+
                 "chunks of chr that will be created)...This may take a bit of"+
                 " time for large genomes (ex: <1 min for the human genome).\n")
     if args.step_size:

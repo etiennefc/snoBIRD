@@ -15,13 +15,13 @@ rule split_chr:
         "../scripts/python/split_chr.py"
 
 rule genome_prediction:
-    """ Predict with SnoBIRD first model C/D box snoRNA genes in the input 
+    """ Predict with SnoBIRD's first model C/D box snoRNA genes in the input 
         fasta(s)."""
     input:
         genome_dir = rules.split_chr.output.split_chr_dir,
         snoBIRD = rules.download_models.output.model1
     output:
-        windows = "results/predictions/first_model/{chr_}.txt"
+        windows = "results/predictions/first_model/positive_windows_{chr_}.tsv"
     params:
         pretrained_model = config.get('pretrained_model'),  # might have to add it instead of downloading this pretrained model
         step_size = config.get('step_size'),
@@ -36,8 +36,29 @@ rule genome_prediction:
         "{output.windows} {params.pretrained_model} "
         "{params.fixed_length} {params.step_size} "
         "{params.strand} {params.python_script}"
-    
 
+
+rule merge_filter_windows:
+    """ From the positive windows predicted by the first model of SnoBIRD, 
+        concat these windows in one file (across chr and/or chr chunks), filter 
+        the windows by score and consecutive blocks of nt and merge afterwards 
+        into one block per prediction.
+        Step_size=5 is the best option for S. pombe."""
+    input:
+        all_cd = 'data/references/positives/filtered_CD_snoRNAs.bed',
+        pred_dir = 'results/predictions/snoBIRD/schizosaccharomyces_pombe_step5/',
+        genome = 'data/references/genome_fa/schizosaccharomyces_pombe_genome.fa'
+    output:
+        filtered_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_preds_step5.bed',
+        center_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_center_preds_step5.bed',
+        density_block_length = 'results/figures/density/snoBIRD/pred_block_length_s_pombe.svg',
+        bed_overlap_sno = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/overlap_snoBIRD_annotated_CD.bed'
+    params:
+        fixed_length = 194
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/pombe_filter_windows.py"
 
 
 '''
