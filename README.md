@@ -3,7 +3,7 @@ SnoBIRD (**B**ERT-based **I**dentification and **R**efinement of C/**D** box **s
 
 ## Tested with the following dependencies
 
-- **Python** version == 3.11.4<br>
+- **Python** version == 3.10.14<br>
 - **Conda** version == 23.7.2<br>
 - **Mamba** version == 1.4.9<br>
 - **Snakemake** version == 7.18.2<br>
