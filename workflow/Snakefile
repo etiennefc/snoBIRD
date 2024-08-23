@@ -9,6 +9,7 @@ input_fasta = config.get("input_fasta")  # path
 step_size = config.get("step_size")  # int
 chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
+strand = config.get("chunk_size")  # 'both', '+' or '-'
 #print(step_size, chunks, chunk_size, input_fasta)
 
 
