@@ -45,9 +45,8 @@ rule merge_filter_windows:
         into one block per prediction.
         Step_size=5 is the best option for S. pombe."""
     input:
-        all_cd = 'data/references/positives/filtered_CD_snoRNAs.bed',
-        pred_dir = 'results/predictions/snoBIRD/schizosaccharomyces_pombe_step5/',
-        genome = 'data/references/genome_fa/schizosaccharomyces_pombe_genome.fa'
+        #preds = expand(rules.genome_prediction.output.windows, chr_=CHR_),
+        input_fasta = config.get("input_fasta")
     output:
         filtered_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_preds_step5.bed',
         center_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_center_preds_step5.bed',

@@ -4,14 +4,23 @@ import subprocess as sp
 import argparse
 import os
 
-def find_download(dir_="workflow/data/references/models/", quiet=False):
+def find_download(dir_="workflow/data/references/", quiet=False):
     "Find if SnoBIRD models have already been downloaded."
     model_download = "will be been downloaded!"
     model_download_bool = False
-    if os.path.exists(dir_):
-        potential_downloads = os.listdir(dir_)
-        if ('snoBIRD_first_model.pt' in potential_downloads) & (
-            'snoBIRD_second_model.pt' in potential_downloads):
+    if (os.path.exists(dir_+'models')) & (
+        os.path.exists(dir_+'DNA_BERT_6_tokenizer')) & (
+            os.path.exists(dir_+'DNA_BERT_6_pretrained_model')
+        ):
+        potential_downloads_model = os.listdir(dir_+'models')
+        potential_downloads_bert = os.listdir(
+                                        dir_+'DNA_BERT_6_pretrained_model')
+        potential_downloads_tokenizer = os.listdir(
+                                        dir_+'DNA_BERT_6_tokenizer')
+        if ('snoBIRD_first_model.pt' in potential_downloads_model) & (
+            'snoBIRD_second_model.pt' in potential_downloads_model) & (
+                'model.safetensors' in potential_downloads_bert) & (
+                    'tokenizer.json' in potential_downloads_tokenizer):
             model_download = ("have already been downloaded. You should now "+
                         "run SnoBIRD without the -d/--download_model option.")
             model_download_bool = True

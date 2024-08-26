@@ -9,7 +9,7 @@ input_fasta = config.get("input_fasta")  # path
 step_size = config.get("step_size")  # int
 chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
-strand = config.get("chunk_size")  # 'both', '+' or '-'
+strand = config.get("strand")  # 'both', '+' or '-'
 #print(step_size, chunks, chunk_size, input_fasta)
 
 
@@ -24,15 +24,17 @@ if not config.get("download_model"):
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
         input:
-            windows = expand("results/predictions/first_model/positive_windows_{chr_}.tsv", chr_=CHR_)
-            #split_chr_dir = "data/references/genome_fa/"
+            #windows = expand("results/predictions/first_model/positive_windows_{chr_}.tsv", chr_=CHR_)
+            split_chr_dir = "data/references/genome_fa/"
         # Specify which output will be created depending on the user-defined params
 
 rule all_downloads:
     """ Download all models that constitute SnoBIRD."""
     input:
         model1 = "data/references/models/snoBIRD_first_model.pt",
-        model2 = "data/references/models/snoBIRD_second_model.pt"
+        model2 = "data/references/models/snoBIRD_second_model.pt",
+        tokenizer = "data/references/DNA_BERT_6_tokenizer/",
+        dnabert = "data/references/DNA_BERT_6_pretrained_model/"
 
 
 
