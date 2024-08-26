@@ -15,15 +15,17 @@ from transformers import AutoTokenizer, BertForSequenceClassification, logging
 model_path = str(sys.argv[1])
 genome = str(sys.argv[2])
 chr_name = genome.split('/')[-1].replace('.fa', '')
-pretrained_model = str(sys.argv[4])
-window_size = int(sys.argv[5])
-step_size_defined = int(sys.argv[6])
-strand = str(sys.argv[7])
+pretrained_model = str(sys.argv[3])
+tokenizer_path = str(sys.argv[4])
+window_size = int(sys.argv[6])
+step_size_defined = int(sys.argv[7])
+strand = str(sys.argv[8])
 batch_size = 128
 num_labels = 2
-output = str(sys.argv[3])
+output = str(sys.argv[5])
 
-sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {window_size} {step_size_defined} {strand} {output}', shell=True)
+sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {tokenizer_path} {window_size} {step_size_defined} {strand} {output}', shell=True)
+sp.call('pwd', shell=True)
 
 # Define if we use GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,7 +54,7 @@ sp.call(f'echo IS CUDA AVAILABLE?: {torch.cuda.is_available()}', shell=True)
 
 # Load model and tokenizer 
 start_time = time.time()
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 model = BertForSequenceClassification.from_pretrained(pretrained_model, num_labels=num_labels)
 model.load_state_dict(torch.load(model_path)) 
 model.to(device)

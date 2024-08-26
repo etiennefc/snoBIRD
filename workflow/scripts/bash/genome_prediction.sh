@@ -5,12 +5,13 @@ echo START bash
 # Initialize variables
 model=$1
 genome=$2
-output=$3
-pretrained_model=$4
-fixed_length=$5
-step_size=$6
-strand=$7
-python_script=$8
+pretrained_model=$3
+tokenizer=$4
+output=$5
+fixed_length=$6
+step_size=$7
+strand=$8
+python_script=$9
 
 # Load modules
 module load StdEnv/2020
@@ -35,8 +36,9 @@ nvidia-modprobe
 python3 $python_script \
 $model \
 $genome \
-$output \
 $pretrained_model \
+$tokenizer \
+$output \
 $fixed_length \
 $step_size \
 $strand \

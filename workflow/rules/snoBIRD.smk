@@ -19,11 +19,12 @@ rule genome_prediction:
         fasta(s)."""
     input:
         genome_dir = rules.split_chr.output.split_chr_dir,
-        snoBIRD = rules.download_models.output.model1
+        snoBIRD = rules.download_models.output.model1,
+        pretrained_model = rules.download_DNA_BERT.output.dnabert,
+        tokenizer = rules.download_DNA_BERT.output.tokenizer
     output:
         windows = "results/predictions/first_model/positive_windows_{chr_}.tsv"
     params:
-        pretrained_model = config.get('pretrained_model'),  # might have to add it instead of downloading this pretrained model
         step_size = config.get('step_size'),
         fixed_length = config.get('fixed_length'),
         strand = config.get('strand'),
@@ -33,7 +34,8 @@ rule genome_prediction:
     shell:
         "bash scripts/bash/genome_prediction.sh "
         "{input.snoBIRD} {input.genome_dir}/fasta/{wildcards.chr_}.fa "
-        "{output.windows} {params.pretrained_model} "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{output.windows} "
         "{params.fixed_length} {params.step_size} "
         "{params.strand} {params.python_script}"
 
