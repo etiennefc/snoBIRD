@@ -47,7 +47,9 @@ rule merge_filter_windows:
         into one block per prediction.
         Step_size=5 is the best option for S. pombe."""
     input:
-        #preds = expand(rules.genome_prediction.output.windows, chr_=CHR_),
+        predictions = expand(rules.genome_prediction.output.windows, 
+                            chr_=config.get('CHR_')),
+        input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta")
     output:
         filtered_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_preds_step5.bed',
@@ -55,11 +57,14 @@ rule merge_filter_windows:
         density_block_length = 'results/figures/density/snoBIRD/pred_block_length_s_pombe.svg',
         bed_overlap_sno = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/overlap_snoBIRD_annotated_CD.bed'
     params:
-        fixed_length = 194
+        fixed_length = config.get('fixed_length'),
+        step_size = config.get("step_size"),
+        chunk_size = config.get("chunk_size"),
+        strand = config.get("strand")
     conda:
         "../envs/python_new.yaml"
     script:
-        "../scripts/python/pombe_filter_windows.py"
+        "../scripts/python/merge_filter_windows.py"
 
 
 '''

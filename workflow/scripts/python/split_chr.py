@@ -33,9 +33,15 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
     chr_id = SeqIO.read(input_fasta, "fasta").id
 
     # Get the number of fasta files (chunks) that will be created
-    last_chunk = 1
-    if len(seq_) % max_size == 0:  # no last chunk (max size is a 
-        last_chunk = 0             # factor of len(seq_))
+    last_chunk = 0
+    # If last chunk is >= fixed_length, create a real last chunk; otherwise, 
+    # the last x nt (where x<fixed_length) are concatenated to the previous 
+    # chunk to form the real last chunk. This is only for seq_ > 2 * max_size
+    if (len(seq_) % max_size != 0) & (len(seq_) % max_size >= fixed_length) & (
+        len(seq_) > max_size * 2):
+        last_chunk = 1
+    if len(seq_) < max_size:
+        last_chunk = 1  # last and only chunk
     num_files = (len(seq_) // max_size) + last_chunk
     
     # Each split must overlap by a window size - 1 nt to not miss any window
@@ -68,14 +74,16 @@ def split_and_overlap(input_fasta, max_size=5000000, fixed_length=194):
     # For seq > 2*max_size nt
     elif len(seq_) > max_size * 2:
         print(f"\nConverting {chr_id}.fa into {num_files} smaller fasta chunks:")
-        prev_size = 0
         for i in range(num_files):
             start = max(0, i * max_size - overlap)
             end = min((i + 1) * max_size, len(seq_))
+            if i == num_files - 1:  # for remainders of seq < fixed_length, 
+                end = len(seq_) # concat to previous sequence
+            prev_size = max(0, len(seq_[0:start]) - 1) 
             # Create a new file for each split
             output_file3 = f"{input_dir}/{chr_id}_chunk_{i}.fa"
             with open(output_file3, 'w') as f3:
-                f3.write(f">{chr_id}_chunk_{i}  prev_size={prev_size}"+
+                f3.write(f">{chr_id}_chunk_{i}  prev_size={prev_size} "+
                         f"total_size={len(seq_)}\n")
                 f3.write(str(seq_[start:end]))
                 print(f"Created: workflow/{output_file3}")

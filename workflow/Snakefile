@@ -20,6 +20,7 @@ include: "rules/snoBIRD.smk"
 
 if not config.get("download_model"):
     CHR_ = get_chr_names(input_fasta, chunks, chunk_size)
+    config['CHR_'] = CHR_
 
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""

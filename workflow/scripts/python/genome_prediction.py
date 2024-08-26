@@ -25,7 +25,6 @@ num_labels = 2
 output = str(sys.argv[5])
 
 sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {tokenizer_path} {window_size} {step_size_defined} {strand} {output}', shell=True)
-sp.call('pwd', shell=True)
 
 # Define if we use GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
