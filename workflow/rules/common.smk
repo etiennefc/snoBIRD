@@ -53,14 +53,21 @@ def validate_fasta(input_fasta, valid_ext=('.fasta', '.fa')):
 
 
 
-def get_chunk_names(len_seq, chr_name, max_size=5000000):
+def get_chunk_names(len_seq, chr_name, max_size=5000000, fixed_length=194):
     ''' Get the number of fasta chunks that will be created with --chunks 
         (including the untouched fastas); return a list of chr/chunk names.'''
     # Get the number of fasta files (chunks) that will be created
-    last_chunk = 1
-    if len_seq % max_size == 0:  # no last chunk (max size is a 
-        last_chunk = 0             # factor of len(seq_))
+    last_chunk = 0
+    # If last chunk is >= fixed_length, create a real last chunk; otherwise, 
+    # the last x nt (where x<fixed_length) are concatenated to the previous 
+    # chunk to form the real last chunk. This is only for seq_ > 2 * max_size
+    if (len_seq % max_size != 0) & (len_seq % max_size >= fixed_length) & (
+        len_seq > max_size * 2):
+        last_chunk = 1
+    if len_seq < max_size:
+        last_chunk = 1  # last and only chunk
     num_files = (len_seq // max_size) + last_chunk
+    
     # Return chunk names
     if num_files == 1:
         return [chr_name]
