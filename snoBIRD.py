@@ -51,8 +51,8 @@ def main(no_arg=False):
     optional_group.add_argument('--version', '-v', action='store_true', 
                                 help="Show SnoBIRD version")
     optional_group.add_argument('--download_model', '-d', action='store_true', 
-        help="Download the 2 models that SnoBIRD uses "+
-        "(should be used only once, before running snoBIRD)")
+        help="Download the models that SnoBIRD uses (chould be used only "+
+        "once, before running SnoBIRD with an input fasta file)")
     optional_group.add_argument('--dryrun', '-n', action='store_true', 
         help="Run a snakemake dry run to just print a summary of the DAG of "+
         "jobs and verify job dependencies")

@@ -107,8 +107,8 @@ def get_chr_names(input_fasta, chunk_value, chunk_size):
                             max_size=chunk_size)
                 all_chr_chunks.extend(chunk_names)
         else:  # only 1 chr in initial fasta, but might be splittable in chunks
-            only_chr = all_chr.keys()[0]
-            only_chr_size = all_chr.values()[0]
+            only_chr = list(all_chr.keys())[0]
+            only_chr_size = list(all_chr.values())[0]
             chunk_names = get_chunk_names(only_chr_size, only_chr, 
                         max_size=chunk_size)
             all_chr_chunks.extend(chunk_names)
