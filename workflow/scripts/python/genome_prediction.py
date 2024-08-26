@@ -149,7 +149,7 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
         sp.call(f'echo EVAL BATCH {n_batch} {chr_name} {round(n_batch/(total_window/(mem_batch*mini_batch_size))*100, 2)}%', shell=True)
         n_batch += 1
         eval_dataset_real = TensorDataset(big_batch[0].input_ids, big_batch[0].attention_mask)
-        for i, ev_batch in enumerate(DataLoader(eval_dataset_real, batch_size=batch_size, num_workers=4)):
+        for i, ev_batch in enumerate(DataLoader(eval_dataset_real, batch_size=batch_size, num_workers=2)):
             ev_input_ids, ev_attention_mask = ev_batch
             ev_input_ids = ev_input_ids.to(device)
             ev_attention_mask = ev_attention_mask.to(device)
