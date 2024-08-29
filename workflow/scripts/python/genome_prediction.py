@@ -35,7 +35,7 @@ N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
 torch.set_num_threads(int(N_CPUS))
 
 # Force to not parallelize tokenizing before dataloader (causes forking errors otherwise)
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # Allow TF32 on matrix multiplication to speed up computations
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -56,8 +56,8 @@ start_time = time.time()
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 model = BertForSequenceClassification.from_pretrained(pretrained_model, num_labels=num_labels)
 model.load_state_dict(torch.load(model_path)) 
-model.to(device)
-model.classifier.to(device)
+model.to(device, non_blocking=True)
+model.classifier.to(device, non_blocking=True)
 model.eval()
 end_time = time.time()
 sp.call(f'echo LOAD INITIAL MODEL: {end_time-start_time}', shell=True)
@@ -121,8 +121,8 @@ def scan_fasta(chr_dict_, chr_seq, window_size, mini_batch_size, step_size=step_
             #eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size)
 
             # Convert starts/ends lists to tensor
-            starts = torch.tensor(starts).to(device)
-            ends = torch.tensor(ends).to(device)
+            starts = torch.tensor(starts).to(device, non_blocking=True)
+            ends = torch.tensor(ends).to(device, non_blocking=True)
 
             # where len(kmer_seqs) = mini_batch_size * mem_batch_size 
             yield eval_dataset, starts, ends   
@@ -148,23 +148,23 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
         sp.call(f'echo EVAL BATCH {n_batch} {chr_name} {round(n_batch/(total_window/(mem_batch*mini_batch_size))*100, 2)}%', shell=True)
         n_batch += 1
         eval_dataset_real = TensorDataset(big_batch[0].input_ids, big_batch[0].attention_mask)
-        for i, ev_batch in enumerate(DataLoader(eval_dataset_real, batch_size=batch_size, num_workers=2)):
+        for i, ev_batch in enumerate(DataLoader(eval_dataset_real, batch_size=batch_size, num_workers=2, pin_memory=True)):
             ev_input_ids, ev_attention_mask = ev_batch
-            ev_input_ids = ev_input_ids.to(device)
-            ev_attention_mask = ev_attention_mask.to(device)
+            ev_input_ids = ev_input_ids.to(device, non_blocking=True)
+            ev_attention_mask = ev_attention_mask.to(device, non_blocking=True)
             with torch.no_grad():  # nor gradient computation
                 s_time = time.time()
                 ev_input_ids_np_ = ev_input_ids.cpu().numpy()
                 #print(ev_input_ids_np, len(ev_input_ids_np))
-                ev_attention_mask_np_ = ev_attention_mask.cpu().numpy()
                 if len(ev_input_ids_np_) != mini_batch_size:  # to account for the last batch at the end of chromosome
                     start_time = time.time()
+                    ev_attention_mask_np_ = ev_attention_mask.cpu().numpy()
                     len_diff = mini_batch_size - len(ev_input_ids_np_)
                     sp.call('echo LAST BATCH MISMATCH', shell=True)
                     # Pad it on the right side to be same size as mini_batch_size
                     original_len = len(ev_input_ids_np_)
-                    ev_input_ids_np2 = torch.tensor(np.pad(ev_input_ids_np_, ((0, len_diff), (0, 0)), 'constant', constant_values=0)).to(device)
-                    ev_attention_mask_np2 = torch.tensor(np.pad(ev_attention_mask_np_, ((0, len_diff), (0, 0)), 'constant', constant_values=0)).to(device)
+                    ev_input_ids_np2 = torch.tensor(np.pad(ev_input_ids_np_, ((0, len_diff), (0, 0)), 'constant', constant_values=0)).to(device, non_blocking=True)
+                    ev_attention_mask_np2 = torch.tensor(np.pad(ev_attention_mask_np_, ((0, len_diff), (0, 0)), 'constant', constant_values=0)).to(device, non_blocking=True)
                     #sp.call(f'echo {type(ev_input_ids_np2)} {type(ev_attention_mask_np2)}', shell=True)
                     #sp.call(f'echo {ev_input_ids_np2.size()} {ev_attention_mask_np2.size()}', shell=True)
                     #sp.call(f'echo {ev_input_ids_np2}', shell=True)
@@ -172,18 +172,18 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
                     outputs = model(ev_input_ids_np2, attention_mask=ev_attention_mask_np2)
                     # Get only the prediction for the relevant examples, not the padding
                     outputs2 = outputs[0][0:original_len]
-                    probabilities = torch.softmax(outputs2, dim=1).to(device)
-                    pred_labels = torch.argmax(probabilities, dim=1).to(device)
+                    probabilities = torch.softmax(outputs2, dim=1).to(device, non_blocking=True)
+                    pred_labels = torch.argmax(probabilities, dim=1).to(device, non_blocking=True)
                     end_time = time.time()
                     sp.call(f'echo batch mismatch whole time: {end_time -start_time}s', shell=True)
                     if 1 in pred_labels:  # i.e. positive predictions
-                        positives_index = (pred_labels == 1).nonzero().squeeze().to(device)
-                        starts = big_batch[1][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device)
-                        pos_starts = starts[positives_index].to(device)
+                        positives_index = (pred_labels == 1).nonzero().squeeze().to(device, non_blocking=True)
+                        starts = big_batch[1][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device, non_blocking=True)
+                        pos_starts = starts[positives_index].to(device, non_blocking=True)
                         if pos_starts.dim() == 0:
                             pos_starts = pos_starts.unsqueeze(0)
-                        ends = big_batch[2][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device)
-                        pos_ends = ends[positives_index].to(device)
+                        ends = big_batch[2][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device, non_blocking=True)
+                        pos_ends = ends[positives_index].to(device, non_blocking=True)
                         if pos_ends.dim() == 0:
                             pos_ends = pos_ends.unsqueeze(0)
 
@@ -203,23 +203,23 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
                     #print(f'run: {end_time -start_time}s')
                     #print(outputs)
                     start_time = time.time()
-                    probabilities = torch.softmax(outputs.logits, dim=1).to(device)
-                    pred_labels = torch.argmax(probabilities, dim=1).to(device)
+                    probabilities = torch.softmax(outputs.logits, dim=1).to(device, non_blocking=True)
+                    pred_labels = torch.argmax(probabilities, dim=1).to(device, non_blocking=True)
                     end_time = time.time()
                     #print(f'conv: {end_time -start_time}s')
                     if 1 in pred_labels:  # i.e. positive predictions
                         #print(pred_labels)
-                        positives_index = (pred_labels == 1).nonzero().squeeze().to(device)
+                        positives_index = (pred_labels == 1).nonzero().squeeze().to(device, non_blocking=True)
                         #print(positives_index)
-                        starts = big_batch[1][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device)
+                        starts = big_batch[1][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device, non_blocking=True)
                         #print(starts)
-                        pos_starts = starts[positives_index].to(device)
+                        pos_starts = starts[positives_index].to(device, non_blocking=True)
                         if pos_starts.dim() == 0:
                             pos_starts = pos_starts.unsqueeze(0)
                         #print(pos_starts)
                         #print('STARTSSSSS', pos_starts, len(pos_starts))
-                        ends = big_batch[2][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device)
-                        pos_ends = ends[positives_index].to(device)
+                        ends = big_batch[2][i*mini_batch_size:i*mini_batch_size+mini_batch_size].to(device, non_blocking=True)
+                        pos_ends = ends[positives_index].to(device, non_blocking=True)
                         if pos_ends.dim() == 0:
                             pos_ends = pos_ends.unsqueeze(0)
                         #print(pos_ends)
