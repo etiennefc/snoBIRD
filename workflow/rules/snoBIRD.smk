@@ -39,23 +39,20 @@ rule genome_prediction:
         "{params.fixed_length} {params.step_size} "
         "{params.strand} {params.python_script}"
 
-
 rule merge_filter_windows:
     """ From the positive windows predicted by the first model of SnoBIRD, 
         concat these windows in one file (across chr and/or chr chunks), filter 
         the windows by score and consecutive blocks of nt and merge afterwards 
-        into one block per prediction.
-        Step_size=5 is the best option for S. pombe."""
+        into one block per prediction (and one center window surrounding the 
+        snoRNA)."""
     input:
         predictions = expand(rules.genome_prediction.output.windows, 
                             chr_=config.get('CHR_')),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta")
     output:
-        filtered_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_preds_step5.bed',
-        center_preds = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/filtered_center_preds_step5.bed',
-        density_block_length = 'results/figures/density/snoBIRD/pred_block_length_s_pombe.svg',
-        bed_overlap_sno = 'results/predictions/snoBIRD/schizosaccharomyces_pombe/overlap_snoBIRD_annotated_CD.bed'
+        filtered_preds = 'results/predictions/first_model/filtered_positive_windows.bed',
+        center_preds = 'results/predictions/first_model/filtered_center_positive_windows.bed'
     params:
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),

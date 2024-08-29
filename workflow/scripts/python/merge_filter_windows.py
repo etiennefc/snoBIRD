@@ -2,9 +2,6 @@
 import pandas as pd
 import os
 import collections as coll
-import seaborn as sns
-import matplotlib.pyplot as plt
-from figures import functions as ft
 from pybedtools import BedTool
 import subprocess as sp
 from Bio import SeqIO
@@ -25,39 +22,50 @@ output_df_center = snakemake.output.center_preds
 
 # Concat all predictions of first SnoBIRD model into 1 df (preds from all 
 # chr and/or chunks)
+""" Apply 1st filter on probability."""
 dfs = []
 for p in all_preds:
-    df = pd.read_csv(f'{pred_dir}/{p}', sep='\t', names=[
-                'chr',	'strand', 'start', 'end', 'probability_first_model'])
+    df = pd.read_csv(p, sep='\t')
+    df = df.rename(columns={'probs': 'probability_first_model'})
+    
+    df = df[df['probability_first_model'] > 0.999]
     dfs.append(df)
 df_preds = pd.concat(dfs)
-print(df_preds)
 
 
 # For chunks of chr, rectify genomic location of positive windows based on 
 # the number of previous chunks
-chunk_fa = [path for path in os.listdir(input_fasta_dir) if '_chunk_' in path]
+# Preds on - strand have already been corrected during genome_prediction 
+chunk_fa = [path for path in os.listdir(
+            input_fasta_dir+'/fasta/') if '_chunk_' in path]
 rectify_dict = {}
-
-# Strand awareness!!!!!!!!!!!!!!!!!!!!!!!!
 if len(chunk_fa) > 0:
     for chunk in chunk_fa:
-        with open(chunk, 'r') as f:
+        with open(input_fasta_dir+'/fasta/'+chunk, 'r') as f:
             first_line = f.readline().replace('>', '').replace('\n', '')
             chunk_name = first_line.split('  ')[0]
-            chunk_number = int(chunk_names.split('_')[-1])
+            chunk_number = int(chunk_name.split('_')[-1])
             prev_size = int(first_line.split(' ')[2].replace('prev_size=', ''))
-            prev_size = prev_size - chunk_number*fixed_length + 1 * chunk_number
             total_size = int(first_line.split(' ')[3].replace(
                             'total_size=', ''))
             rectify_dict[chunk_name] = (prev_size, total_size)
 
 
+def rectify_pos(row, chr_dict):
+    # Rectify position based on the number of nt before a given chunk
+    if row['chr'] in chr_dict.keys():
+        nt_number = chr_dict[row['chr']][0]
+        row['start'] = row['start'] + nt_number 
+        row['end'] = row['end'] + nt_number
+        row['chr'] = row['chr'].split('_chunk_')[0]
+    return row
 
-""" Apply first filter: probability of each window."""
-# Filter predictions based on probability
-df_preds = df_preds[df_preds['probability_first_model'] > 0.999].sort_values(
-                                            by=['chr', 'start', 'strand'])
+df_preds = df_preds.apply(rectify_pos, axis=1, chr_dict=rectify_dict)
+df_preds['chr'] = df_preds['chr'].astype(str)
+df_preds = df_preds.sort_values(by=['chr', 'start', 'strand'])
+
+
+
 
 # Calculate difference in start positions between consecutive rows
 # It creates a NA for each first row of a group in the groupby
@@ -80,10 +88,10 @@ df_preds.loc[(df_preds['diff'].isna()) & (mask), 'diff'] = 2
 df_preds.loc[df_preds['diff'].isna(), 'diff'] = 2  
 df_preds['stretch_id'] = (df_preds['diff'] > 1).cumsum()
 df_preds['stretch_id'] =  'block_' + df_preds['stretch_id'].astype(str)
-df_preds = df_preds[['chr', 'start', 'end', 'stretch_id', 'strand', 'probability_first_model']]
+df_preds = df_preds[['chr', 'start', 'end', 'stretch_id', 'strand', 
+                    'probability_first_model']]
 df_preds.to_csv('temp_preds.bed', sep='\t', index=False, header=False)
 preds_bed = BedTool('temp_preds.bed')
-print(df_preds)
 
 # Merge consecutive positive preds into one entry and create bed out of 
 # all blocks this is done via groupby over the stretch_id column and keeping 
@@ -100,8 +108,6 @@ merged_blocks = merged_blocks.sort_values(by =
 
 # Get length of block
 merged_blocks['len'] = merged_blocks.end - merged_blocks.start + 1
-## Test filtering for len at that stage before merging overlapping blocks
-##merged_blocks = merged_blocks[merged_blocks['len'] > 200]
 
 
 # Merge blocks that overlap reciprocally to at least 50%
@@ -133,44 +139,48 @@ for i in range(len(merged_blocks)):
 
 # Create a DataFrame from the merged rows
 result_df = pd.DataFrame(merged_rows)
-
-
-""" Apply second filter: length of merged blocks"""
-result_df = result_df[(result_df['len'] >= 204) & (result_df['len'] <= 264)]
-#print(result_df.reset_index(
-#    drop=True)[['chrom', 'start', 'end', 'score', 'len', 'name']])
-#print(result_df)
+""" Apply 2nd filter: length of merged blocks"""
+#result_df = result_df[(result_df['len'] >= 204) & (result_df['len'] <= 264)]
+result_df = result_df[result_df['len'] >= 204]
 result_df.reset_index(drop=True).reset_index(drop=True)[
     ['chrom', 'start', 'end', 'name', 'score', 'strand', 'len']
     ].to_csv(output_df, sep='\t', index=False, header=False)
-merged_blocks_bed = BedTool(output_df)
 
-# Create density plot of the block length of positive predictions
-title = 'Length of predicted blocks before\nwindow centering (nt) in S. pombe'
-ft.density(result_df['len'], 'Block length', 'Density', title, 
-                block_length_output)
+# Deal with large blocks that can contain more than 1 snoRNA (ex: clustered 
+# snoRNAs). They might not have a centered positively predicted window as there 
+# are likely two or more in the same block, so not necessarily centered
+
+
+
+
+
 
 # Select the center window of fixed_length in the merged block
 center_window = result_df.reset_index(drop=True).copy()
 center_window[['centered_start', 'centered_end']] = center_window.apply(
                     lambda row: ut.centered_window(row, fixed_length), axis=1)
 
-df1_windows = set(df_preds.apply(lambda row: (row['chr'], row['start'], row['end'], row['strand']), axis=1))
+df1_windows = set(df_preds.apply(lambda row: (
+                row['chr'], row['start'], row['end'], row['strand']), axis=1))
 
 # Check if rows in df2 are present in df1
-center_window['is_present_in_df1'] = center_window.apply(lambda row: (row['chrom'], row['centered_start'], row['centered_end'], row['strand']) in df1_windows, axis=1)
-print(center_window)
-print(len(center_window[center_window['is_present_in_df1'] == False]))
+""" Apply 3rd filter: if center window is not predicted as CD in the merged 
+    block, don't consider that prediction."""
+center_window['is_present_in_df1'] = center_window.apply(lambda row: (
+        row['chrom'], row['centered_start'], row['centered_end'], row['strand']
+        ) in df1_windows, axis=1)
+center_window = center_window[center_window['is_present_in_df1'] == True]
+
 # Add prediction id
 center_window['index_'] = center_window.index + 1
 center_window['prediction_id'] = 'CD_' + center_window.index_.astype(str)
 cols_bed = ['chrom', 'centered_start', 'centered_end', 'prediction_id', 
             'score', 'strand', 'name']
-center_window[cols_bed].to_csv('center_window.bed', sep='\t', index=False, 
-                                header=False)
+center_window[cols_bed].reset_index(drop=True).to_csv('center_window.bed', 
+                        sep='\t', index=False, header=False)
 bed_center_window = BedTool('center_window.bed')
 
-# Get sequence of the centered predicted CD
+# Get sequence of the centered predicted CD window
 fasta = bed_center_window.sequence(fi=input_fasta, nameOnly=True, s=True)
 d = {}
 with open(fasta.seqfn, 'r') as f:
@@ -186,17 +196,8 @@ center_window[f'extended_{fixed_length}nt_sequence'] = center_window[
                                                         'prediction_id'].map(d)
 center_window[cols_bed + [f'extended_{fixed_length}nt_sequence']].to_csv(
                         output_df_center, sep='\t', index=False, header=False)
-print(center_window[cols_bed + [f'extended_{fixed_length}nt_sequence']])
 
 
-# If predicted CD overlaps with annotated C/D, return as positive
-pos = cd_yeast_bed.intersect(bed_center_window, s=True, wb=True)
-pos = pos.to_dataframe(names=['chrom', 'start', 'end', 'gene_id_annot', 
-                        'score', 'strand', 'feature', 'sno_type', 'chrom_pred',
-                        'start_pred', 'end_pred', 'prediction_id', 'probability', 
-                        'strand_pred', 'block_id'])
-print(pos.sort_values('gene_id_annot'))
-print(len(pos))
-pos.to_csv(bed_overlap, sep='\t', index=False, header=False)
+
 
 sp.call('rm temp_preds.bed center_window.bed', shell=True)
