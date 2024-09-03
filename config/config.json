@@ -1,6 +1,9 @@
 {
   "pretrained_model": "zhihan1996/DNA_bert_6",
   "fixed_length": 194,
+  "num_labels": 2,
+  "min_box_dist": 15,
+  "flanking_nt": 20,
   "download":
   {
     "first_model": "https://zenodo.org/records/13375669/files/snoBIRD_first_model.pt",

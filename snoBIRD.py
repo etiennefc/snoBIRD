@@ -51,15 +51,16 @@ def main(no_arg=False):
     optional_group.add_argument('--version', '-v', action='store_true', 
                                 help="Show SnoBIRD version")
     optional_group.add_argument('--download_model', '-d', action='store_true', 
-        help="Download the models that SnoBIRD uses (chould be used only "+
+        help="Download the models that SnoBIRD uses (should be used only "+
         "once, before running SnoBIRD with an input fasta file)")
     optional_group.add_argument('--dryrun', '-n', action='store_true', 
         help="Run a snakemake dry run to just print a summary of the DAG of "+
         "jobs and verify job dependencies")
-    optional_group.add_argument('--step_size', '-s', type=int, 
-        help="Step size between predicted windows (default: 5); where s=1 "+
-        "will predict on ALL possible windows contained in a given sequence", 
-                                default=5)
+    optional_group.add_argument('--first_model_only', '-f', action='store_true', 
+        help="Run only the first SnoBIRD model and not the second (i.e. "+
+        "predict only the presence of C/D snoRNA genes in the general sense; "+
+        "no predictions if they are expressed snoRNAs or snoRNA pseudogenes "+
+        "by the second model)")
     # --no-chunks is an implicit available flag 
     # (--chunks returns True; --no-chunks returns None)
     optional_group.add_argument('--chunks', 
@@ -67,16 +68,80 @@ def main(no_arg=False):
                                 default=True,
         help="Divide (--chunks) or not (--no-chunks) large fasta files into"+
             " smaller chunks/fastas to predict more efficiently in parallel; "+
-            "if --no-chunks, SnoBIRD is less efficient "+
+            "if --no-chunks, SnoBIRD will be less efficient "+
             "(default: --chunks)")
     optional_group.add_argument('--chunk_size', '-cs', type=int, 
         help="Maximal chunk size in megabases (Mb) when --chunks is chosen "+
-            "(default: 5000000)", default=5000000)
+            "(default: 5)", default=5)
+    optional_group.add_argument('--step_size', '-s', type=int, 
+        help="Step size between predicted windows (default: 5); where s=1 "+
+        "will predict on ALL possible windows contained in a given sequence; "+
+        "WARNING: setting s=1 will increase SnoBIRD's runtime by ~5 fold "+
+        "compared to the default value", default=5)
     optional_group.add_argument('--strand', '-S', type=str, 
         choices=['both', '+', '-'], 
         help="Strand on which to predict (default: both)", default="both")
+    optional_group.add_argument('--batch_size', '-b', type=int, 
+        help='Number of sequences per batch that are processed in parallel '+
+            'by SnoBIRD (default: 128); increasing this number increases '+
+            'VRAM/RAM usage', default=128)
+    optional_group.add_argument('--output_type', type=str, 
+        choices=['tsv', 'fa'],
+        help="Desired output file type, i.e. either a tab-separated (.tsv) or"+
+            " fasta (.fa) file (default: tsv)", default="tsv")
+    optional_group.add_argument('--prob_first_model', '-p1', type=float, 
+        help="Minimal prediction probability of a given window to be "+
+            "considered as a C/D snoRNA gene by SnoBIRD's first model in the "+
+            "identification step (default: 0.999); WARNING: lowering this "+
+            "number can dramaticaly increase the number of false positives, "+
+            "whereas increasing this number can increase the number of false "+
+            "negatives ", default=0.999)
+    optional_group.add_argument('--consecutive_windows', '-w', type=int, 
+        help="Minimum number of consecutive windows predicted as a C/D snoRNA"+
+            " gene by SnoBIRD's first model to be considered as a C/D snoRNA "+
+            "gene in the identification step (default: 10); in other words, "+
+            "one needs at least 10 positive consecutive windows overlapping a"+
+            " candidate for it to be considered as a C/D snoRNA gene", 
+            default=10)
+    optional_group.add_argument('--prob_second_model', '-p2', type=float, 
+        help="Minimal prediction probability of a given window to be "+
+            "confidently considered as either an expressed C/D snoRNA or a "+
+            "C/D snoRNA pseudogene by SnoBIRD's second model in the "+
+            "refinement step (default: 0.999)", default=0.999)
+    optional_group.add_argument('--box_score', '-B', type=int, 
+        help="Box score threshold value used in the refinement step to filter"+
+            " SnoBIRD's second model predictions; it represents the maximal "+
+            "number of mutations across boxes tolerated in an expressed C/D "+
+            "snoRNA (default: 5)", default=5)
+    optional_group.add_argument('--score_c', '-C', type=int, 
+        help="Threshold value used in the refinement step to filter"+
+            " SnoBIRD's second model predictions; it represents the maximal "+
+            "number of mutations within the C box tolerated in an expressed "+
+            "C/D snoRNA (default: 2)", default=2)
+    optional_group.add_argument('--score_d', '-D', type=int, 
+        help="Threshold value used in the refinement step to filter"+
+            " SnoBIRD's second model predictions; it represents the maximal "+
+            "number of mutations within the D box tolerated in an expressed "+
+            "C/D snoRNA (default: 1)", default=1)
+    optional_group.add_argument('--terminal_stem_score', '-T', type=float, 
+        help="Threshold value used in the refinement step to filter"+
+            " SnoBIRD's second model predictions; it represents the maximal "+
+            "terminal stem score tolerated in an expressed C/D snoRNA "+
+            "(default: -25); lowering this threshold (e.g. -100) will return "+
+            "more stringent predictions for expressed C/D snoRNA genes",
+             default=-25.0)
+    optional_group.add_argument('--normalized_sno_stability', '-N', type=float, 
+        help="Threshold value used in the refinement step to filter"+
+            " SnoBIRD's second model predictions; it represents the maximal "+
+            "normalized secondary structure stability (in "+
+            "kcal/mol/nucleotide) tolerated in an expressed C/D snoRNA "+
+            "(default: -0.2); lowering this threshold (e.g. -0.5) will return"+
+            " more stringent predictions for expressed C/D snoRNA genes",
+             default=-0.2)
+             
+    
+    #optional_group.add_argument(profile local or cluster)
     #parser.add_argument('--run_rule', type=str, help="Rule to run")
-    #parser.add_argument('--configfile', type=str, help="Configuration file")
     #parser.add_argument('--cores', type=int, help="Number of cores")
     
     args = parser.parse_args()
@@ -97,6 +162,10 @@ def main(no_arg=False):
     ## Build Snakemake command
     snakemake_cmd = ("cd workflow && snakemake --use-conda --cores 1 "+
                     "--rerun-triggers mtime --conda-frontend mamba ")
+    #snakemake_cmd = ("cd workflow && snakemake --use-conda --conda-frontend "+
+    #                "mamba -j 999 --immediate-submit --notemp "+
+    #                "--cluster-config cluster.yaml --cluster "+
+    #                "'python3 slurmSubmit.py {dependencies}' ")
 
     # Define the required args effects
     config_l = "--config "
@@ -135,17 +204,48 @@ def main(no_arg=False):
             print("\nExecuting the dryrun (getting the number of chr and/or "+
                 "chunks of chr that will be created)...This may take a bit of"+
                 " time for large genomes (ex: <1 min for the human genome).\n")
+
     if args.step_size:
         config_l += f"step_size={args.step_size} "
     if args.strand:
         config_l += f"strand={args.strand} "
+    if args.batch_size:
+        config_l += f"batch_size={args.batch_size} "
     if args.chunks:
         config_l += f"chunks={args.chunks} "
+    if args.output_type:
+        config_l += f"output_type={args.output_type} "
+    if args.prob_first_model:
+        config_l += (
+            f"min_probability_threshold_first_model={args.prob_first_model} ")
+    if args.consecutive_windows:
+        config_l += (
+            f"min_consecutive_windows_threshold={args.consecutive_windows} ")
+    if args.prob_second_model:
+        config_l += (
+        f"min_probability_threshold_second_model={args.prob_second_model} ")
+    if args.box_score:
+        config_l += f"box_score_threshold={args.box_score} "
+    if args.score_c:
+        config_l += f"score_c_threshold={args.score_c} "
+    if args.score_d:
+        config_l += f"score_d_threshold={args.score_d} "
+    if args.terminal_stem_score:
+        config_l += (
+                f"terminal_stem_score_threshold={args.terminal_stem_score} ")
+    if args.normalized_sno_stability:
+        config_l += (
+        f"normalized_sno_stability_threshold={args.normalized_sno_stability} ")
     if args.chunk_size:
         if args.chunks:
-            config_l += f"chunk_size={args.chunk_size} "
+            # Convert chunk_size from Megabase to base
+            config_l += f"chunk_size={args.chunk_size * 1000000} "
         else:
             config_l += "chunk_size=None "
+    if args.first_model_only:
+        config_l += "first_model_only=True "
+    else:
+        config_l += "first_model_only=False "
     
     snakemake_cmd += config_l
     
