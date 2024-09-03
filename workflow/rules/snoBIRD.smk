@@ -23,7 +23,7 @@ rule genome_prediction:
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
         tokenizer = rules.download_DNA_BERT.output.tokenizer
     output:
-        windows = "results/predictions/first_model/positive_windows_{chr_}.tsv"
+        windows = "results/intermediate/predictions/first_model/positive_windows_{chr_}.tsv"
     params:
         step_size = config.get('step_size'),
         fixed_length = config.get('fixed_length'),
@@ -51,156 +51,119 @@ rule merge_filter_windows:
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta")
     output:
-        filtered_preds = 'results/predictions/first_model/filtered_positive_windows.bed',
-        center_preds = 'results/predictions/first_model/filtered_center_positive_windows.bed'
+        filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
+        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     params:
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),
         chunk_size = config.get("chunk_size"),
-        strand = config.get("strand")
+        strand = config.get("strand"),
+        prob_threshold = config.get("min_probability_threshold_first_model"),
+        min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold")
     conda:
         "../envs/python_new.yaml"
     script:
         "../scripts/python/merge_filter_windows.py"
 
-
-'''
-rule genome_windows_separate_chrom:
-    """ Predict windows of 194 nt on the genome."""
+rule shap_snoBIRD:
+    """ Compute SHAP values for each predicted C/D snoRNA. This is needed to 
+        find the C and D boxes and define the snoRNA limits (start/end) in the 
+        positive window that encompass the snoRNA. The SHAP values give an 
+        indication of which part of the sequence is important for the C/D 
+        snoRNA prediction (at the nucleotide resolution)."""
     input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_4e-5_4e-7_16_30/transformer_2_classes_LR_schedule_trained_fold_9.pt',
-        genome = 'data/references/genome_fa/drosophila_melanogaster/{chr}.fa'  # rule separate_chrom
+        snoBIRD = rules.download_models.output.model1,
+        preds = rules.merge_filter_windows.output.center_preds,
+        pretrained_model = rules.download_DNA_BERT.output.dnabert,
+        tokenizer = rules.download_DNA_BERT.output.tokenizer
     output:
-        windows = 'results/predictions/snoBIRD/drosophila_melanogaster/pos_windows_{chr}.tsv'
+        shap_df = "results/intermediate/predictions/first_model/SHAP/shap_values_all_predictions.tsv"
     params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-	strand = 'both',
-	python_script = "scripts/python/genome_windows_separate_chrom.py"
+        fixed_length = config.get('fixed_length'),
+        python_script = 'scripts/python/shap_snoBIRD.py'
+    #conda:
+    #    "../envs/python_new.yaml"
     shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-	"{input.snoBIRD} {input.genome} {output.windows} "
-	"{params.pretrained_model} "
-	"{params.fixed_length} {params.step_size} "
-	"{params.strand} {params.python_script}"
+        "bash scripts/bash/shap_snoBIRD.sh "
+        "{input.snoBIRD} {input.preds} "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{params.fixed_length} {params.python_script} "
+        "{output.shap_df}"
 
-rule genome_windows_separate_chrom_1X:
-    """ Predict windows of 194 nt on the genome."""
+rule find_sno_limits_shap_minimal:
+    """ Run this rule if the user wants to run ONLY the first SnoBIRD model 
+        (minimal case in which the pipeline stops when the C/D snoRNA 
+        predictions are complete (no info on expressed vs pseudogene)). 
+        Based on the SHAP values, find the C and/or the D box to delimit the 
+        snoRNA start and end, as well as the C' and D' boxes. Return also the 
+        box score (i.e. sum of mutations across the C/D/C'/D' boxes). """
     input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_2e-5_2e-6_16_20_1X/transformer_2_classes_LR_schedule_trained_fold_5.pt',
-        genome = 'data/references/genome_fa/saccharomyces_cerevisiae/{chr}.fa'  
+        shap_df = rules.shap_snoBIRD.output.shap_df,
+        preds = rules.merge_filter_windows.output.center_preds
     output:
-        windows = 'results/predictions/snoBIRD/saccharomyces_cerevisiae/pos_windows_1X_{chr}.tsv'
+        minimal_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
     params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-        strand = 'both',
-        python_script = "scripts/python/genome_windows_separate_chrom.py"
-    shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-        "{input.snoBIRD} {input.genome} {output.windows} "
-        "{params.pretrained_model} "
-        "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
+        output_type = config.get("output_type")
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/find_sno_limits_shap_minimal.py"
 
-rule genome_windows_separate_chrom_2X:
-    """ Predict windows of 194 nt on the genome."""
+rule find_sno_limits_shap:
+    """ Based on the SHAP values, find the C and/or the D box to delimit the 
+        snoRNA start and end, as well as the C' and D' boxes. This creates the 
+        dataframe needed for the second step of SnoBIRD predictions"""
     input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_2e-5_2e-6_16_20_2X/transformer_2_classes_LR_schedule_trained_fold_10.pt',
-        genome = 'data/references/genome_fa/saccharomyces_cerevisiae/{chr}.fa'
+        shap_df = rules.shap_snoBIRD.output.shap_df,
+        preds = rules.merge_filter_windows.output.center_preds
     output:
-        windows = 'results/predictions/snoBIRD/saccharomyces_cerevisiae/pos_windows_2X_{chr}.tsv'
-    params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-        strand = 'both',
-        python_script = "scripts/python/genome_windows_separate_chrom.py"
-    shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-        "{input.snoBIRD} {input.genome} {output.windows} "
-        "{params.pretrained_model} "
-        "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
+        df = 'results/intermediate/predictions/first_model/SHAP/all_cd_predicted_sno_limits.tsv'
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/find_sno_limits_shap.py"
 
-rule genome_windows_separate_chrom_data_aug:
-    """ Predict windows of 194 nt on the genome."""
+rule sno_pseudo_prediction:
+    """ Predict with SnoBIRD's second model if the C/D box snoRNA genes 
+        identified by the first model are expressed or pseudogenes."""
     input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_2e-5_2e-6_16_4_data_aug/transformer_2_classes_LR_schedule_trained_fold_6.pt',
-        genome = 'data/references/genome_fa/saccharomyces_cerevisiae/{chr}.fa'  
+        snoBIRD = rules.download_models.output.model2,
+        pretrained_model = rules.download_DNA_BERT.output.dnabert,
+        tokenizer = rules.download_DNA_BERT.output.tokenizer,
+        preds = rules.merge_filter_windows.output.center_preds
     output:
-        windows = 'results/predictions/snoBIRD/saccharomyces_cerevisiae/pos_windows_data_aug_fold6_{chr}.tsv'
+        windows = "results/intermediate/predictions/second_model/sno_pseudo_predictions.tsv"
     params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-        strand = 'both',
-        python_script = "scripts/python/genome_windows_separate_chrom.py"
+        fixed_length = config.get('fixed_length'),
+        python_script = 'scripts/python/sno_pseudo_prediction.py'
+    #conda:
+    #    "../envs/python_new.yaml"
     shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-        "{input.snoBIRD} {input.genome} {output.windows} "
-        "{params.pretrained_model} "
-        "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
+        "bash scripts/bash/sno_pseudo_prediction.sh "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{input.preds} {input.snoBIRD} "
+        "{output.windows} "
+        "{params.fixed_length} {params.python_script}"
 
-rule genome_windows_separate_chrom_data_aug2:
-    """ Predict windows of 194 nt on the genome."""
+rule filter_sno_pseudo_predictions_with_features:
+    """ Compute the snoRNA normalized structure stability as well as its 
+        terminal stem combined score. Use these metrics with the box score and 
+        the second model's predictions to filter even more which C/D snoRNAs 
+        are predicted as expressed or snoRNA pseudogenes. """
     input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_2e-5_2e-6_16_4_data_aug/transformer_2_classes_LR_schedule_trained_fold_1.pt',
-        genome = 'data/references/genome_fa/saccharomyces_cerevisiae/{chr}.fa'
+        sno_limits = rules.find_sno_limits_shap.output.df,
+        sno_pseudo_preds = rules.sno_pseudo_prediction.output.windows
     output:
-        windows = 'results/predictions/snoBIRD/saccharomyces_cerevisiae/pos_windows_data_aug_fold1_{chr}.tsv'
+        final_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
     params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-        strand = 'both',
-        python_script = "scripts/python/genome_windows_separate_chrom.py"
-    shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-        "{input.snoBIRD} {input.genome} {output.windows} "
-        "{params.pretrained_model} "
-        "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
-
-rule genome_windows_separate_chrom_equal:
-    """ Predict windows of 194 nt on the genome."""
-    input:
-        snoBIRD = 'data/references/trained_transformer_2_classes_2e-5_2e-6_16_20_equal/transformer_2_classes_LR_schedule_trained_fold_3.pt',
-        genome = 'data/references/genome_fa/saccharomyces_cerevisiae/{chr}.fa'
-    output:
-        windows = 'results/predictions/snoBIRD/saccharomyces_cerevisiae/pos_windows_equal_{chr}.tsv'
-    params:
-        pretrained_model = "zhihan1996/DNA_bert_6",
-        fixed_length = 190,
-        step_size = 1,
-        strand = 'both',
-        python_script = "scripts/python/genome_windows_separate_chrom.py"
-    shell:
-        "bash scripts/bash/genome_windows_separate_chrom.sh "
-        "{input.snoBIRD} {input.genome} {output.windows} "
-        "{params.pretrained_model} "
-        "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
-
-
-#rule genome_windows_separate_chrom_onnx:
-#    """ Create windows of 190 the Candida genome."""
-#    input:
-#        snoBIRD = 'data/references/trained_transformer_2_classes_4e-5_4e-7_16_30/transformer_2_classes_LR_schedule_trained_fold_9.pt',
-#        genome = 'data/references/genome_fa/candida_albicans/{chr}.fa'  # rule separate_chrom
-#    output:
-#        windows = 'results/onnx/windows_onnx_{chr}.tsv'
-#    params:
-#        random_state = 42,
-#        pretrained_model = "zhihan1996/DNA_bert_6",
-#        fixed_length = 190,
-#        step_size = 1,
-#        strand = 'both'
-#    conda:
-#        "../envs/python_new3.yaml"
-#    script:
-#        "../scripts/python/genome_windows_separate_chrom_onnx.py"
-'''
+        output_type = config.get("output_type"),
+        prob_second_model = config.get('min_probability_threshold_second_model'),
+        box_score_thresh = config.get("box_score_threshold"),
+        score_c_thresh = config.get("score_c_threshold"),
+        score_d_thresh = config.get("score_d_threshold"),
+        terminal_stem_score_thresh = config.get("terminal_stem_score_threshold"),
+        normalized_sno_stability_thresh = config.get("normalized_sno_stability_threshold")
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/filter_sno_pseudo_predictions_with_features.py"

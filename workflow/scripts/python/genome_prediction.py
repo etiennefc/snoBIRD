@@ -11,7 +11,9 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
 from transformers import AutoTokenizer, BertForSequenceClassification, logging
+from utils import seq2kmer
 #logging.set_verbosity_error()
+
 model_path = str(sys.argv[1])
 genome = str(sys.argv[2])
 chr_name = genome.split('/')[-1].replace('.fa', '')
@@ -20,8 +22,8 @@ tokenizer_path = str(sys.argv[4])
 window_size = int(sys.argv[6])
 step_size_defined = int(sys.argv[7])
 strand = str(sys.argv[8])
-batch_size = 128
-num_labels = 2
+batch_size = int(snakemake.config['batch_size'])
+num_labels = int(snakemake.config['num_labels'])
 output = str(sys.argv[5])
 
 sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {tokenizer_path} {window_size} {step_size_defined} {strand} {output}', shell=True)
@@ -61,16 +63,6 @@ model.classifier.to(device, non_blocking=True)
 model.eval()
 end_time = time.time()
 sp.call(f'echo LOAD INITIAL MODEL: {end_time-start_time}', shell=True)
-
-
-def seq2kmer(seq, k):
-    """
-    Convert original str sequence to kmers (str of all kmers)
-    """
-    kmer = [seq[x:x+k] for x in range(len(seq)+1-k)]
-    kmers = " ".join(kmer)
-    return kmers
-
 
 
 if strand == 'positive':
@@ -279,4 +271,3 @@ else:  # predict on both strands
     results_df.to_csv(output, index=False, sep='\t')
 
 
-# test with different mem_batch. With mem_batch=10-->2.27G/2.3G/2.8G on neg/pos/both strand (with chrM Candida; 3m33)

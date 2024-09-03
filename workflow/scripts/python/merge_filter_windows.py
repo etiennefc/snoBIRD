@@ -11,10 +11,13 @@ import utils as ut
 input_fasta = snakemake.input.input_fasta
 input_fasta_dir = snakemake.input.input_fasta_dir
 all_preds = snakemake.input.predictions
-fixed_length = snakemake.params.fixed_length
+fixed_length = int(snakemake.params.fixed_length)
 strand = snakemake.params.strand 
 step_size = snakemake.params.step_size
 chunk_size = snakemake.params.chunk_size
+prob_threshold = float(snakemake.params.prob_threshold)
+min_consecutive_windows = int(
+                            snakemake.params.min_consecutive_windows_threshold)
 output_df = snakemake.output.filtered_preds
 output_df_center = snakemake.output.center_preds
 
@@ -28,7 +31,7 @@ for p in all_preds:
     df = pd.read_csv(p, sep='\t')
     df = df.rename(columns={'probs': 'probability_first_model'})
     
-    df = df[df['probability_first_model'] > 0.999]
+    df = df[df['probability_first_model'] > prob_threshold]
     dfs.append(df)
 df_preds = pd.concat(dfs)
 
@@ -141,7 +144,8 @@ for i in range(len(merged_blocks)):
 result_df = pd.DataFrame(merged_rows)
 """ Apply 2nd filter: length of merged blocks"""
 #result_df = result_df[(result_df['len'] >= 204) & (result_df['len'] <= 264)]
-result_df = result_df[result_df['len'] >= 204]
+result_df = result_df[result_df['len'] >= (
+                                    fixed_length + min_consecutive_windows)]
 result_df.reset_index(drop=True).reset_index(drop=True)[
     ['chrom', 'start', 'end', 'name', 'score', 'strand', 'len']
     ].to_csv(output_df, sep='\t', index=False, header=False)
@@ -149,7 +153,7 @@ result_df.reset_index(drop=True).reset_index(drop=True)[
 # Deal with large blocks that can contain more than 1 snoRNA (ex: clustered 
 # snoRNAs). They might not have a centered positively predicted window as there 
 # are likely two or more in the same block, so not necessarily centered
-
+# Include also step-size specific thresholds?
 
 
 

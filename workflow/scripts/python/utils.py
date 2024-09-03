@@ -652,13 +652,6 @@ def get_seq(row, fixed_length=194, extended=False, extension=15):
     return s
 
 
-def find_shift(row):
-    """
-    Find shift (index) of sequence within extended sequence.
-    """
-    return row[f'extended_{fixed_length}nt_sequence'].find(row['sequence'])
-
-
 def get_sno_location(row, fixed_length=194):
     """
     Get snoRNA genomic location based on C and D boxes positions.
@@ -884,21 +877,21 @@ def terminal_stem(df, seq_col, extended_col=False, extended_col_name=None):
 
 def feature_filters(df, prob_column, old_pred_column, new_pred_column, 
                     terminal_combined = -25, sno_mfe = -0.2, box_score = 5, 
-                    score_c = 2, score_d = 1):
+                    score_c = 2, score_d = 1, prob_thresh = 0.999):
     """
     Based on the snoRNA features and probability of prediction of the second 
     model, filter the predictions so that we maximize the precision on the 
     snoRNA pseudogene class.
     """
     # Change prediction for the actual label instead of number
-    dictio = {0: 'snoRNA_pseudogene', 1: 'expressed_CD_snoRNA'}
+    dictio = {0: 'CD_snoRNA_pseudogene', 1: 'expressed_CD_snoRNA'}
     df[new_pred_column] = df[old_pred_column].replace(dictio)
 
     # Apply 1st filter post-snoBIRD's 2nd model based on prediction probability
     # (minor change to prediction if pred probability > 0.999 (high prob); 
     # major changes if pred probability is <= 0.999 (low prob))
-    minor_change = df[df[prob_column] > 0.999]
-    major_change = df[df[prob_column] <= 0.999]
+    minor_change = df[df[prob_column] > prob_thresh]
+    major_change = df[df[prob_column] <= prob_thresh]
     changed_id = []
 
     # FIRST FILTER: on prediction with low probability (<=0.999)
@@ -906,7 +899,7 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
     major_change.loc[(~major_change['gene_id'].isin(changed_id)) & (
                     major_change['score_c'] >= score_c) & (
                     major_change['score_d'] >= score_d), 
-                    new_pred_column] = 'snoRNA_pseudogene'
+                    new_pred_column] = 'CD_snoRNA_pseudogene'
     changed_id.extend(list(major_change[(~major_change['gene_id'].isin(
                             changed_id)) & (
                             major_change['score_c'] >= score_c) & (
@@ -923,7 +916,7 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
                                                                 'gene_id']))
     
     # THIRD FILTER: on prediction with low probability (<=0.999)
-    # If <= 2 features are "favorable" for expression --> snoRNA_pseudogene
+    # If <= 2 features are "favorable" for expression --> CD_snoRNA_pseudogene
     major_change.loc[(~major_change['gene_id'].isin(changed_id)) & (((
             major_change['terminal_combined'] <= terminal_combined).astype(
                 int) + 
@@ -931,7 +924,7 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
             (major_change['box_score'] <= box_score).astype(int) + (
             major_change['score_c'] <= score_c).astype(int) + (
             major_change['score_d'] < score_d).astype(int)) <= 2), 
-            new_pred_column] = 'snoRNA_pseudogene'
+            new_pred_column] = 'CD_snoRNA_pseudogene'
     changed_id.extend(list(major_change.loc[(~major_change['gene_id'].isin(
                     changed_id)) & (((major_change[
                     'terminal_combined'] <= terminal_combined).astype(int) + 
@@ -943,11 +936,12 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
                                                                 'gene_id']))
     
     # FOURTH FILTER: on prediction with high probability (>0.999) 
-    # (only on snoRNA_pseudogene predictions)
+    # (only on CD_snoRNA_pseudogene predictions)
     # If >= 4/5 features are "favorable" for expression --> expressed_CD_snoRNA
     minor_change['last_predicted_label'] = minor_change[new_pred_column]
     minor_change.loc[(
-                minor_change.last_predicted_label == 'snoRNA_pseudogene') & (((
+                minor_change.last_predicted_label == 'CD_snoRNA_pseudogene') & 
+                (((
                 minor_change['terminal_combined'] <= terminal_combined).astype(
                     int) + 
                 (minor_change['normalized_sno_stability'] <= sno_mfe).astype(
@@ -961,10 +955,10 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
     concat_df = pd.concat([minor_change, major_change])
 
     # LAST FILTER: if NNNNNN as C or NNNN as D box, 
-    # automatically assign as snoRNA_pseudogene
+    # automatically assign as CD_snoRNA_pseudogene
     concat_df.loc[(concat_df['C_MOTIF'] == 'NNNNNNN') | (
         concat_df['D_MOTIF'] == 'NNNN'), 
-        new_pred_column] = 'snoRNA_pseudogene'
+        new_pred_column] = 'CD_snoRNA_pseudogene'
     
     concat_df = concat_df.sort_values(['chr', 'start', 'strand'])
 
