@@ -2,126 +2,25 @@ __default__:
     job-name: "SM.{rule}"
     nodes: 1
     cpus-per-task: 1
-    mem-per-cpu: 4G
-    time: 0-3:00:00
+    mem-per-cpu: 8G
+    time: 0-1:00:00
     mail-user: "etienne.fafard-couture@usherbrooke.ca"
     mail-type: FAIL
 
-trimming:
-    cpus-per-task: 4
-    mem: 16G
-    time: 0-4:00:00
+merge_filter_windows:
+    mem-per-cpu: 16G
 
-training_transformer:
+genome_prediction:
     gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
-    time: 0-1:30:00
+    cpus-per-task: 2
+    mem-per-cpu: 16G
+    time: 0-11:00:00
 
-training_transformer_w_features:
+shap_snoBIRD:
     gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
-    time: 0-3:30:00
 
-hypertuning_transformer_2_classes:
+sno_pseudo_prediction:
     gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-3:30:00
 
-hypertuning_transformer_sno_pseudo:
-    gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
-    time: 0-4:00:00
-
-training_transformer_2_classes:
-    gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
+filter_sno_pseudo_predictions_with_features:
     time: 0-2:00:00
-
-training_transformer_2_classes_LR_schedule:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 16000
-    time: 0-6:00:00
-
-training_transformer_sno_pseudo:
-    gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
-    time: 0-3:00:00
-
-test_transformer_2_classes:
-    gpus-per-node: 1
-    cpus-per-task: 2
-    mem-per-cpu: 16000
-    time: 0-0:20:00
-
-test_transformer_2_classes_LR_schedule:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-0:30:00
-
-test_before_training_transformer_2_classes:
-    gpus-per-node: 1
-    cpus-per-task: 2
-    mem-per-cpu: 16000
-    time: 0-0:20:00
-
-test_before_training_transformer_sno_pseudo:
-    gpus-per-node: 1
-    cpus-per-task: 2
-    mem-per-cpu: 16000
-    time: 0-0:20:00
-
-test_transformer_sno_pseudo:
-    gpus-per-node: 1
-    cpus-per-task: 2
-    mem-per-cpu: 16000
-    time: 0-0:20:00
-
-genome_windows_separate_chrom:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-1:00:00
-
-genome_windows_separate_chrom_1X:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-3:00:00
-
-genome_windows_separate_chrom_2X:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-3:00:00
-
-genome_windows_separate_chrom_data_aug:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-2:30:00
-
-genome_windows_separate_chrom_data_aug2:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-2:30:00
-
-genome_windows_separate_chrom_equal:
-    gpus-per-node: 1
-    cpus-per-task: 1
-    mem-per-cpu: 8000
-    time: 0-2:30:00
-
-training_transformer_w_features_2_classes:
-    gpus-per-node: 1
-    cpus-per-task: 6
-    mem-per-cpu: 16000
-    time: 0-25:00:00

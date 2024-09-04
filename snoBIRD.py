@@ -29,6 +29,25 @@ def find_download(dir_="workflow/data/references/", quiet=False):
     return model_download_bool
 
 
+def is_sbatch_installed():
+    """ Find if SLURM's sbatch command is installed to see if the user is on a 
+        local computer or a SLURM cluster."""
+    try:
+        # Try to run sbatch --version to check if sbatch is installed
+        result = sp.run(['sbatch', '--version'], stdout=sp.PIPE, 
+                    stderr=sp.PIPE, text=True)
+        
+        # If the command was successful, return True
+        if result.returncode == 0:
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        # If sbatch is not found, return False
+        return False
+
+
+
 def main(no_arg=False):
     # Set up argument parser
     msg = ("python3 snoBIRD.py [-options] -i "+
@@ -37,6 +56,11 @@ def main(no_arg=False):
                     description=(
     "SnoBIRD identifies C/D box snoRNA genes in a given genomic sequence."))
     
+    # Set up local and cluster profiles 
+    # (cluster by default, unless -n or -d is used)
+    profile_local = '--profile ../profile_local '
+    profile_slurm = '--profile ../profile_slurm '
+
     # Set up required options
     required_group = parser.add_argument_group('Required options')
     required_group.add_argument('--input_fasta', '-i', type=str, 
@@ -56,6 +80,15 @@ def main(no_arg=False):
     optional_group.add_argument('--dryrun', '-n', action='store_true', 
         help="Run a snakemake dry run to just print a summary of the DAG of "+
         "jobs and verify job dependencies")
+    optional_group.add_argument('--local_profile', '-L', action='store_true', 
+        help="Force SnoBIRD to run locally, i.e. not on a HPC cluster. This "+
+            "should ONLY be used for small input fasta files (<1Mb). By "+
+            "default, SnoBIRD assumes that you use it on a HPC cluster (since"+
+            " it was designed to run in parallel on several GPUs) and will "+
+            "deal automatically with job dependencies. This local_profile "+
+            "option is thus disabled by default, unless you use the -n and/or"+
+            " -d options (which will run locally a dryrun or download_model, "+
+            "respectively).")
     optional_group.add_argument('--first_model_only', '-f', action='store_true', 
         help="Run only the first SnoBIRD model and not the second (i.e. "+
         "predict only the presence of C/D snoRNA genes in the general sense; "+
@@ -159,13 +192,6 @@ def main(no_arg=False):
         parser.print_help()
         exit()
 
-    ## Build Snakemake command
-    snakemake_cmd = ("cd workflow && snakemake --use-conda --cores 1 "+
-                    "--rerun-triggers mtime --conda-frontend mamba ")
-    #snakemake_cmd = ("cd workflow && snakemake --use-conda --conda-frontend "+
-    #                "mamba -j 999 --immediate-submit --notemp "+
-    #                "--cluster-config cluster.yaml --cluster "+
-    #                "'python3 slurmSubmit.py {dependencies}' ")
 
     # Define the required args effects
     config_l = "--config "
@@ -182,7 +208,8 @@ def main(no_arg=False):
                 exit()
     else:
         if args.download_model:
-            snakemake_cmd += "all_downloads "
+            snakemake_cmd = "cd workflow && snakemake "
+            snakemake_cmd += "all_downloads " + profile_local
             config_l += "input_fasta=fake_input "
             config_l += "download_model=True "
             find_download()
@@ -194,16 +221,32 @@ def main(no_arg=False):
     # Define optional args effects
 
     ## Add custom parameters to the Snakemake command
+    if args.local_profile:
+        snakemake_cmd = "cd workflow && snakemake " + profile_local
+        
     if args.input_fasta:
         if args.download_model:
-            snakemake_cmd += "all_downloads "
+            snakemake_cmd = "cd workflow && snakemake "
+            snakemake_cmd += "all_downloads " + profile_local
             find_download()
     if args.dryrun:
-        snakemake_cmd += "-n "
+        snakemake_cmd = "cd workflow && snakemake "+ profile_local
+        snakemake_cmd += "-n " 
         if not args.download_model:
             print("\nExecuting the dryrun (getting the number of chr and/or "+
                 "chunks of chr that will be created)...This may take a bit of"+
                 " time for large genomes (ex: <1 min for the human genome).\n")
+        else:
+            snakemake_cmd = "cd workflow && snakemake all_downloads -n " 
+    if not args.local_profile:  # default value
+        if not args.download_model and not args.dryrun:
+            if is_sbatch_installed():
+                snakemake_cmd = "cd workflow && snakemake " + profile_slurm
+            else:
+                raise ModuleNotFoundError("It seems that you are not on a "+
+                "SLURM cluster, as sbatch is not installed. If you want to "+
+                "run SnoBIRD locally, add the --local_profile option to your "+
+                "command.")
 
     if args.step_size:
         config_l += f"step_size={args.step_size} "

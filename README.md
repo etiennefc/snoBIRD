@@ -39,7 +39,7 @@ git clone https://github.com/etiennefc/snoBIRD.git &&
 cd snoBIRD/
 ```
 
-6 - Finally, download the two models that constitute the core of SnoBIRD:
+6 - Finally, download the models and tokenizer that constitute the core of SnoBIRD:
 ```bash
 python3 snoBIRD.py --download_model
 ```
