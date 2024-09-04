@@ -18,7 +18,12 @@ include: "rules/common.smk"
 include: "rules/download.smk"
 
 if not config.get("download_model"):
-    CHR_ = get_chr_names(input_fasta, chunks, chunk_size)
+    if chunks == True:
+        CHR_ = get_chr_names(input_fasta, chunks, chunk_size)
+    else:
+        CHR_dict = get_chr_names(input_fasta, chunks, chunk_size)
+        CHR_ = list(CHR_dict.keys())
+        config['CHR_dict'] = CHR_dict
     #CHR_ = [i for i in CHR_ if (i[0:2] == 'TEST') | (i[0:3] == '25_c')]
     CHR_ = ['25_chunk_0', '25_chunk_1', 'W_chunk_0', 'W_chunk_1', 'W_chunk_2', 
             'W_chunk_3', '31']

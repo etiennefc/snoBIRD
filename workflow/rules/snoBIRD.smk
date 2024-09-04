@@ -28,7 +28,11 @@ rule genome_prediction:
         step_size = config.get('step_size'),
         fixed_length = config.get('fixed_length'),
         strand = config.get('strand'),
-        python_script = 'scripts/python/genome_prediction.py'
+        python_script = 'scripts/python/genome_prediction.py',
+        gpu = config.get('gpu_generation'),
+        chunks = config.get("chunks"),
+        chunk_size = config.get("chunk_size"),
+        chr_dict = config.get('CHR_dict')
     #conda:
     #    "../envs/python_new.yaml"
     shell:
@@ -80,7 +84,8 @@ rule shap_snoBIRD:
         shap_df = "results/intermediate/predictions/first_model/SHAP/shap_values_all_predictions.tsv"
     params:
         fixed_length = config.get('fixed_length'),
-        python_script = 'scripts/python/shap_snoBIRD.py'
+        python_script = 'scripts/python/shap_snoBIRD.py',
+        gpu = config.get('gpu_generation')
     #conda:
     #    "../envs/python_new.yaml"
     shell:
@@ -135,7 +140,8 @@ rule sno_pseudo_prediction:
         windows = "results/intermediate/predictions/second_model/sno_pseudo_predictions.tsv"
     params:
         fixed_length = config.get('fixed_length'),
-        python_script = 'scripts/python/sno_pseudo_prediction.py'
+        python_script = 'scripts/python/sno_pseudo_prediction.py',
+        gpu = config.get('gpu_generation')
     #conda:
     #    "../envs/python_new.yaml"
     shell:

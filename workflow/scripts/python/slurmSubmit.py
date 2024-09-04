@@ -4,11 +4,7 @@ import sys
 from math import ceil
 from snakemake.utils import read_job_properties
 import subprocess as sp
-import json
 
-with open("../config/config.json", 'r') as f:
-    data = json.load(f)
-#sp.call(f"echo {data}", shell=True)
 
 
 # Define function to get the time needed for a given chr_size
@@ -31,16 +27,27 @@ def time_limit(chr_size_, gpu='A100'):
 
 jobscript = sys.argv[-1]
 job_properties = read_job_properties(jobscript)
-#print(config)
+
 # Adapt time limit depending on the GPU generation
-#if job_properties["rule"] in ["genome_prediction", "shap_snoBIRD", 
-#                            "sno_pseudo_prediction"]:
-#
-#    # Update the cluster properties with the new time limit
-#    inputs = job_properties.get("input", [])
-#    chr_path = [i for i in inputs if i.endswith('.fa')][0]
-#    chr_size = os.path.getsize(chr_path) # in bytes
-#    job_properties['cluster']['time'] = time_limit(chr_size, gpu='V100')
+if job_properties["rule"] in ["genome_prediction"]:
+    print(job_properties['params'])
+    gpu_type = job_properties['params']['gpu']
+    # Update the cluster properties with the new time limit
+    if gpu_type != 'Unknown':
+        if job_properties['params']['chunks'] == True:
+            # get chunk size in bytes
+            chunk_size = int(job_properties['params']['chunk_size']) * 1000000
+            job_properties['cluster']['time'] = time_limit(chunk_size, 
+                                                                gpu=gpu_type)
+            
+        else:
+            chr_size_dict = job_properties['params']['chr_dict']
+            chr_wildcard = job_properties['wildcards']['chr_']
+            chr_wildcard_size = chr_size_dict[chr_wildcard]
+            job_properties['cluster']['time'] = time_limit(chr_wildcard_size, 
+                                                                gpu=gpu_type)
+
+
 
 cmdline = "sbatch "
 for param, val in job_properties['cluster'].items():

@@ -7,7 +7,7 @@ conda-frontend: mamba
 # Snakemake cluster parameters
 immediate-submit: True
 rerun-triggers: mtime
-cluster: 'python3 ../profile_slurm/slurmSubmit.py {dependencies}' # script for sbatch jobs
+cluster: 'python3 scripts/python/slurmSubmit.py {dependencies}' # script for sbatch jobs
 cluster-config: '../profile_slurm/cluster.yaml' # config parameters for each rule
 notemp: True
 keep-going: True

@@ -104,7 +104,7 @@ def get_chr_names(input_fasta, chunk_value, chunk_size):
 
     
     if chunk_value == None:  # no chunks will be created
-        return list(all_chr.keys())
+        return all_chr  # return dict of chr and sizes
     
     if chunk_value == True:  # chunks will be created for big chromosomes
         all_chr_chunks = []

@@ -89,6 +89,17 @@ def main(no_arg=False):
             "option is thus disabled by default, unless you use the -n and/or"+
             " -d options (which will run locally a dryrun or download_model, "+
             "respectively).")
+    optional_group.add_argument('--gpu_generation', '-G', type=str, 
+        choices=['H100', 'A100', 'V100', 'P100', 'Unknown'], 
+        help='GPU generation (from NVIDIA) that will be used to run SnoBIRD '+
+        '(default: A100). WARNING: if Unknown is set, SnoBIRD identification '+
+        'step will take longer to start running, as the same generic longer '+
+        'time will be asked for SnoBIRD to run on each chr/chunks; one can '+
+        'change this generic longer time by changing the time keyword in the '+
+        'genome_prediction entry in the file profile_slurm/cluster.yaml. To '+
+        'find which GPU generations are available on your SLURM cluster, use '+
+        'the command '+
+        'sinfo -o "%%N %%G" | grep "[pPaAvVhH]100"', default="A100")
     optional_group.add_argument('--first_model_only', '-f', action='store_true', 
         help="Run only the first SnoBIRD model and not the second (i.e. "+
         "predict only the presence of C/D snoRNA genes in the general sense; "+
@@ -243,10 +254,11 @@ def main(no_arg=False):
             if is_sbatch_installed():
                 snakemake_cmd = "cd workflow && snakemake " + profile_slurm
             else:
-                raise ModuleNotFoundError("It seems that you are not on a "+
-                "SLURM cluster, as sbatch is not installed. If you want to "+
-                "run SnoBIRD locally, add the --local_profile option to your "+
-                "command.")
+                snakemake_cmd = "cd workflow && snakemake " + profile_slurm
+                #raise ModuleNotFoundError("It seems that you are not on a "+
+                #"SLURM cluster, as sbatch is not installed. If you want to "+
+                #"run SnoBIRD locally, add the --local_profile option to your "+
+                #"command.")
 
     if args.step_size:
         config_l += f"step_size={args.step_size} "
@@ -258,6 +270,8 @@ def main(no_arg=False):
         config_l += f"chunks={args.chunks} "
     if args.output_type:
         config_l += f"output_type={args.output_type} "
+    if args.gpu_generation:
+        config_l += f"gpu_generation={args.gpu_generation} "
     if args.prob_first_model:
         config_l += (
             f"min_probability_threshold_first_model={args.prob_first_model} ")
@@ -293,6 +307,8 @@ def main(no_arg=False):
     snakemake_cmd += config_l
     
     ## Run Snakemake
+    print(snakemake_cmd)
+    sp.call("test_gpu=H100", shell=True)
     sp.call(snakemake_cmd, shell=True)
 
 if __name__ == "__main__":
