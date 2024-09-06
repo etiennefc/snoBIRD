@@ -254,11 +254,10 @@ def main(no_arg=False):
             if is_sbatch_installed():
                 snakemake_cmd = "cd workflow && snakemake " + profile_slurm
             else:
-                snakemake_cmd = "cd workflow && snakemake " + profile_slurm
-                #raise ModuleNotFoundError("It seems that you are not on a "+
-                #"SLURM cluster, as sbatch is not installed. If you want to "+
-                #"run SnoBIRD locally, add the --local_profile option to your "+
-                #"command.")
+                raise ModuleNotFoundError("It seems that you are not on a "+
+                "SLURM cluster, as sbatch is not installed. If you want to "+
+                "run SnoBIRD locally, add the --local_profile option to your "+
+                "command.")
 
     if args.step_size:
         config_l += f"step_size={args.step_size} "
