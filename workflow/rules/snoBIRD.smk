@@ -98,7 +98,7 @@ rule shap_snoBIRD:
         "{input.snoBIRD} {input.preds} "
         "{input.pretrained_model} {input.tokenizer} "
         "{params.fixed_length} {params.python_script} "
-        "{output.shap_df} {output.batch_size} {output.num_labels}"
+        "{output.shap_df} {params.batch_size} {params.num_labels}"
 
 rule find_sno_limits_shap_minimal:
     """ Run this rule if the user wants to run ONLY the first SnoBIRD model 
