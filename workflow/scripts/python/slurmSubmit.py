@@ -32,14 +32,13 @@ job_properties = read_job_properties(jobscript)
 
 # Adapt time limit depending on the GPU generation
 if job_properties["rule"] in ["genome_prediction"]:
-    print(job_properties['params'])
     gpu_type = job_properties['params']['gpu']
     step_size = job_properties['params']['step_size']
     # Update the cluster properties with the new time limit
     if gpu_type != 'Unknown':
         if job_properties['params']['chunks'] == True:
             # get chunk size in bytes
-            chunk_size = int(job_properties['params']['chunk_size']) * 1000000
+            chunk_size = int(job_properties['params']['chunk_size'])
             job_properties['cluster']['time'] = time_limit(chunk_size, 
                                                     step_size, gpu=gpu_type)
             
@@ -53,6 +52,7 @@ if job_properties["rule"] in ["genome_prediction"]:
 
 
 cmdline = "sbatch "
+cmd_line = "sbatch --acount def-scottmic "
 for param, val in job_properties['cluster'].items():
     cmdline += "--{param} {val} ".format(param=param, val=val)
 
