@@ -21,10 +21,10 @@ cd_df = pd.read_csv(sys.argv[2], names = ['chr', 'start', 'end', 'gene_id',
                             f'extended_{fixed_length}nt_sequence'], sep='\t')
 pretrained_model = str(sys.argv[3])
 tokenizer_path = str(sys.argv[4])
-num_labels = int(snakemake.params.num_labels)
-fixed_length = sys.argv[5]
-output_df = str(sys.argv[7])
-batch_size = int(snakemake.params.batch_size)
+fixed_length = int(sys.argv[5])
+output_df = str(sys.argv[6])
+batch_size = int(sys.argv[7])
+num_labels = int(sys.argv[8])
 
 
 # Define if we use GPU (CUDA) or CPU

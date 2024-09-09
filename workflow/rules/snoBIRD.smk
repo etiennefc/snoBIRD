@@ -43,7 +43,8 @@ rule genome_prediction:
         "{input.pretrained_model} {input.tokenizer} "
         "{output.windows} "
         "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script}"
+        "{params.strand} {params.python_script} "
+        "{params.batch_size} {params.num_labels}"
 
 rule merge_filter_windows:
     """ From the positive windows predicted by the first model of SnoBIRD, 
@@ -97,7 +98,7 @@ rule shap_snoBIRD:
         "{input.snoBIRD} {input.preds} "
         "{input.pretrained_model} {input.tokenizer} "
         "{params.fixed_length} {params.python_script} "
-        "{output.shap_df}"
+        "{output.shap_df} {output.batch_size} {output.num_labels}"
 
 rule find_sno_limits_shap_minimal:
     """ Run this rule if the user wants to run ONLY the first SnoBIRD model 
@@ -162,7 +163,8 @@ rule sno_pseudo_prediction:
         "{input.pretrained_model} {input.tokenizer} "
         "{input.preds} {input.snoBIRD} "
         "{output.windows} "
-        "{params.fixed_length} {params.python_script}"
+        "{params.fixed_length} {params.python_script} "
+        "{params.batch_size} {params.num_labels}"
 
 rule filter_sno_pseudo_predictions_with_features:
     """ Compute the snoRNA normalized structure stability as well as its 

@@ -10,6 +10,8 @@ tokenizer=$4
 fixed_length=$5
 python_script=$6
 output=$7
+batch_size=$8
+num_labels=$9
 
 ## Load modules
 module load StdEnv/2020
@@ -40,6 +42,8 @@ $df \
 $pretrained_model \
 $tokenizer \
 $fixed_length \
-$output
+$output \
+$batch_size \
+$num_labels
 
 echo SHAP values computation completed!

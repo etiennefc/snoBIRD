@@ -15,11 +15,11 @@ from utils import seq2kmer
 # Load inputs, params and output
 pretrained_model = str(sys.argv[1])
 tokenizer_path = str(sys.argv[2])  
-batch_size = int(snakemake.params.batch_size)
-num_labels = int(snakemake.params.num_labels)
 model_path = str(sys.argv[4])
 fixed_length = int(sys.argv[5])
 df_preds = sys.argv[6]
+batch_size = int(sys.argv[7])
+num_labels = int(sys.argv[8])
 
 # Limit the number of threads that torch can spawn with (to avoid core 
 # oversubscription) i.e. set the number of threads to the number of CPUs 

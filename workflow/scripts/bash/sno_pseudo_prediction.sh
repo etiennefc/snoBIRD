@@ -10,6 +10,8 @@ model=$4
 output_preds=$5
 fixed_length=$6
 python_script=$7
+batch_size=$8
+num_labels=$9
 
 # Load modules
 module load StdEnv/2020
@@ -33,6 +35,8 @@ $tokenizer \
 $preds \
 $model \
 $fixed_length \
-$output_preds
+$output_preds \
+$batch_size \
+$num_labels
 
 echo Predictions with SnoBIRD's second model (expressed vs pseudogene) completed!

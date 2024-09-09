@@ -12,6 +12,8 @@ fixed_length=$6
 step_size=$7
 strand=$8
 python_script=$9
+batch_size=${10}
+num_labels=${11}
 
 # Load modules
 module load StdEnv/2020
@@ -43,6 +45,7 @@ $output \
 $fixed_length \
 $step_size \
 $strand \
-$python_script
+$batch_size \
+$num_labels
 
 echo Prediction completed!
