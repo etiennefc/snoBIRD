@@ -8,7 +8,7 @@ import utils as ut
 
 # Load df and variables
 len_c_box, len_d_box = 7, 4
-fixed_length = snakemake.config['fixed_length']
+fixed_length = snakemake.params.fixed_length
 preds = pd.read_csv(snakemake.input.preds, sep='\t', names=
         ['chr_window', 'start_window', 'end_window', 'gene_id', 'score', 
         'strand_window', 'block_name', f'extended_{fixed_length}nt_sequence'])
@@ -27,11 +27,11 @@ shap_cols = [i for i in shap_df.columns if i.startswith('SHAP_')]
 # a C/D snoRNA in human). To not miss any snoRNA, we define the minimal length 
 # to find the C or D box to be +-15 nt from the center of the predicted window 
 # as it is in this snoRNA
-min_box_dist = snakemake.config['min_box_dist']  # default: 15
+min_box_dist = snakemake.params.min_box_dist  # default: 15
 # Flanking nt extending after the snoRNA start/end are minimally of 15 nt, so 
 # no C or D box should be found in the first and last 20 nt of the window 
 # (15 nt + 5 nt within the snoRNA to reach C_start or D_end)
-flanking_nt = snakemake.config['flanking_nt']  # default: 20
+flanking_nt = snakemake.params.flanking_nt  # default: 20
 
 # Thus, the ranges in which a C and D boxes can be searched are defined below
 ## + 1 to account for the [CLS] ##

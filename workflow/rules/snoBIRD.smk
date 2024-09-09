@@ -32,7 +32,9 @@ rule genome_prediction:
         gpu = config.get('gpu_generation'),
         chunks = config.get("chunks"),
         chunk_size = config.get("chunk_size"),
-        chr_dict = config.get('CHR_dict')
+        chr_dict = config.get('CHR_dict'),
+        batch_size = config.get("batch_size"),
+        num_labels = config.get('num_labels')
     #conda:
     #    "../envs/python_new.yaml"
     shell:
@@ -85,7 +87,9 @@ rule shap_snoBIRD:
     params:
         fixed_length = config.get('fixed_length'),
         python_script = 'scripts/python/shap_snoBIRD.py',
-        gpu = config.get('gpu_generation')
+        gpu = config.get('gpu_generation'),
+        batch_size = config.get("batch_size"),
+        num_labels = config.get('num_labels')
     #conda:
     #    "../envs/python_new.yaml"
     shell:
@@ -108,7 +112,10 @@ rule find_sno_limits_shap_minimal:
     output:
         minimal_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
     params:
-        output_type = config.get("output_type")
+        output_type = config.get("output_type"),
+        fixed_length = config.get("fixed_length"),
+        min_box_dist = config.get("min_box_dist"),
+        flanking_nt = config.get("flanking_nt")
     conda:
         "../envs/python_new.yaml"
     script:
@@ -123,6 +130,10 @@ rule find_sno_limits_shap:
         preds = rules.merge_filter_windows.output.center_preds
     output:
         df = 'results/intermediate/predictions/first_model/SHAP/all_cd_predicted_sno_limits.tsv'
+    params:
+        fixed_length = config.get("fixed_length"),
+        min_box_dist = config.get("min_box_dist"),
+        flanking_nt = config.get("flanking_nt")
     conda:
         "../envs/python_new.yaml"
     script:
@@ -141,7 +152,9 @@ rule sno_pseudo_prediction:
     params:
         fixed_length = config.get('fixed_length'),
         python_script = 'scripts/python/sno_pseudo_prediction.py',
-        gpu = config.get('gpu_generation')
+        gpu = config.get('gpu_generation'),
+        batch_size = config.get("batch_size"),
+        num_labels = config.get('num_labels')
     #conda:
     #    "../envs/python_new.yaml"
     shell:

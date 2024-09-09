@@ -15,8 +15,8 @@ from utils import seq2kmer
 # Load inputs, params and output
 pretrained_model = str(sys.argv[1])
 tokenizer_path = str(sys.argv[2])  
-batch_size = int(snakemake.config['batch_size'])
-num_labels = int(snakemake.config['num_labels'])
+batch_size = int(snakemake.params.batch_size)
+num_labels = int(snakemake.params.num_labels)
 model_path = str(sys.argv[4])
 fixed_length = int(sys.argv[5])
 df_preds = sys.argv[6]
