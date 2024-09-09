@@ -183,11 +183,12 @@ def main(no_arg=False):
             " more stringent predictions for expressed C/D snoRNA genes",
              default=-0.2)
     optional_group.add_argument('--unlock', '-u', action='store_true', 
-        help="Unlock working directory. This is sometimes necessary to run "+
-        "due to a kill signal or a power loss while the jobs are dispatched "+
-        "on the cluster. This should be used once (which will unlock the "+
-        "working directory), then rerun the snoBIRD command without this "+
-        "option.")
+        help="Unlock working directory. This option will be necessary only "+
+        "when a kill signal or a power loss happens while the jobs are "+
+        "dispatched on the cluster (thereby creating a remaining lock that "+
+        "interferes with snakemake). This should be used once (which will "+
+        "unlock the working directory), then rerun the snoBIRD command "+
+        "without this option")
              
     
     #optional_group.add_argument(profile local or cluster)
