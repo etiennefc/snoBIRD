@@ -182,6 +182,12 @@ def main(no_arg=False):
             "(default: -0.2); lowering this threshold (e.g. -0.5) will return"+
             " more stringent predictions for expressed C/D snoRNA genes",
              default=-0.2)
+    optional_group.add_argument('--unlock', '-u', action='store_true', 
+        help="Unlock working directory. This is sometimes necessary to run "+
+        "due to a kill signal or a power loss while the jobs are dispatched "+
+        "on the cluster. This should be used once (which will unlock the "+
+        "working directory), then rerun the snoBIRD command without this "+
+        "option.")
              
     
     #optional_group.add_argument(profile local or cluster)
@@ -304,10 +310,11 @@ def main(no_arg=False):
         config_l += "first_model_only=False "
     
     snakemake_cmd += config_l
+
+    if args.unlock:
+        snakemake_cmd += "--unlock "
     
     ## Run Snakemake
-    print(snakemake_cmd)
-    sp.call("test_gpu=H100", shell=True)
     sp.call(snakemake_cmd, shell=True)
 
 if __name__ == "__main__":
