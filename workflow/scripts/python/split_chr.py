@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import numpy
 from Bio import SeqIO
 import os
 import subprocess as sp
