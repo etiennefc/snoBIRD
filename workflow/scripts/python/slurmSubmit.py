@@ -17,7 +17,7 @@ def time_limit(chr_size_, gpu='A100'):
         rate = 400000
     elif gpu == 'P100':
         rate = 200000
-    if chr_size <= rate:
+    if chr_size_ <= rate:
         time = "0-1:00:00"
     else:
         hours = ceil(chr_size_/rate)
