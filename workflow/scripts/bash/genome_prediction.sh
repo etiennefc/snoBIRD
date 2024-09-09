@@ -27,7 +27,8 @@ pip install scikit_learn --no-index
 pip install numpy --no-index
 pip install transformers --no-index
 pip install biopython --no-index
-#pip list
+pip install shap --no-index
+
 echo Activated env
 
 # To fix bug happening on V100l (CUDA not available otherwise...)
