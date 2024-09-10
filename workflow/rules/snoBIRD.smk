@@ -178,6 +178,7 @@ rule filter_sno_pseudo_predictions_with_features:
         final_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
     params:
         output_type = config.get("output_type"),
+        fixed_length = config.get("fixed_length"),
         prob_second_model = config.get('min_probability_threshold_second_model'),
         box_score_thresh = config.get("box_score_threshold"),
         score_c_thresh = config.get("score_c_threshold"),

@@ -130,9 +130,9 @@ def main(no_arg=False):
             'by SnoBIRD (default: 128); increasing this number increases '+
             'VRAM/RAM usage', default=128)
     optional_group.add_argument('--output_type', type=str, 
-        choices=['tsv', 'fa'],
-        help="Desired output file type, i.e. either a tab-separated (.tsv) or"+
-            " fasta (.fa) file (default: tsv)", default="tsv")
+        choices=['tsv', 'fa', 'bed'],
+        help="Desired output file type, i.e. either a tab-separated (.tsv), "+
+            "bed (.bed) or fasta (.fa) file (default: tsv)", default="tsv")
     optional_group.add_argument('--prob_first_model', '-p1', type=float, 
         help="Minimal prediction probability of a given window to be "+
             "considered as a C/D snoRNA gene by SnoBIRD's first model in the "+

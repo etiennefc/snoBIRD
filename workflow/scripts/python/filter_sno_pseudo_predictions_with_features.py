@@ -20,6 +20,7 @@ score_d_thresh = int(snakemake.params.score_d_thresh)
 prob_sno_pseudo_thresh = float(snakemake.params.prob_second_model)
 output_ = snakemake.output.final_output
 output_type = snakemake.params.output_type
+fixed_length = int(snakemake.params.fixed_length)
 
 # Compute snoRNA length, normalized structure stability and 
 # terminal stem combined score
@@ -76,6 +77,24 @@ df_final[int_cols] = df_final[int_cols].astype(int)
 
 if output_type == 'tsv':
     df_final.to_csv(output_, sep='\t', index=False)
+if output_type == 'bed':
+    df_final['empty_score'] = '.'
+    bed_cols = ['chr', 'start', 'end', 'gene_id', 'empty_score', 'strand', 
+                'attributes']
+    att_cols = ['probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END',
+            'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
+            'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END', 
+            'terminal_stem_score', 'normalized_sno_stability', 
+            'probability_expressed_pseudogene', 'predicted_label', 
+            'predicted_sequence']
+    def create_attributes(df, col_names):
+        # create an attribute column as last column of bed file
+        return df.apply(lambda row: '; '.join(
+                        [f"{col}={row[col]}" for col in col_names]), axis=1)
+
+    df_final['attributes'] = create_attributes(df, att_cols)
+    df_final[bed_cols].to_csv(output_, sep='\t', index=False, header=False)
+
 if output_type == 'fa':
     with open(output_, 'w') as f:
         for row in df_final.iterrows():
