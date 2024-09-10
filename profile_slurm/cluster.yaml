@@ -1,5 +1,5 @@
 __default__:
-    job-name: "SM.{rule}"
+    job-name: "{rule}"
     nodes: 1
     cpus-per-task: 1
     mem-per-cpu: 8G
