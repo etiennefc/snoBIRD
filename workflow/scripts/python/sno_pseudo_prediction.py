@@ -61,8 +61,7 @@ kmer_seqs = [seq2kmer(s, 6) for s in preds_seqs]
 
 # Tokenize data in right format and create dataloader
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)  # BertTokenizerFast
-eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True).to(
-                                                    device, non_blocking=True)
+eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True)
 eval_labels = torch.tensor([1] * len(first_preds_df)).to(device, 
                             non_blocking=True) # fake labels
 eval_dataset = TensorDataset(eval_dataset.input_ids, 
