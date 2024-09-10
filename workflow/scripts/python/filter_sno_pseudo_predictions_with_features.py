@@ -11,7 +11,10 @@ import utils as ut
 
 # Load dfs, params and define output
 sno_df = pd.read_csv(snakemake.input.sno_limits, sep='\t')
-second_model_preds = pd.read_csv(snakemake.input.sno_pseudo_preds, sep='\t')
+second_model_preds = pd.read_csv(snakemake.input.sno_pseudo_preds, sep='\t', 
+                    names=['chr_window', 'start_window', 'end_window', 
+                    'gene_id', 'block_id', 'probability_expressed_pseudogene', 
+                    'second_model_prediction'])
 terminal_combined_thresh = float(snakemake.params.terminal_stem_score_thresh)
 sno_mfe_thresh = float(snakemake.params.normalized_sno_stability_thresh)
 box_score_thresh = int(snakemake.params.box_score_thresh)
@@ -57,6 +60,9 @@ sno_df = ut.feature_filters(sno_df, 'probability_expressed_pseudogene',
 # Correct the start/end of boxes based on the snoRNA seq and not 
 # the extended window sequence
 boxes = ['C', 'D', 'C_PRIME', 'D_PRIME']
+sno_df = sno_df.merge(second_model_preds[
+            ['gene_id', 'start_window', 'end_window']], 
+            how='left', on='gene_id')
 sno_df = sno_df.apply(ut.correct_box_pos, axis=1, motifs=boxes)
 
 # Save final output
@@ -73,6 +79,7 @@ int_cols = ['start', 'end', 'C_START', 'C_END', 'D_START', 'D_END',
             'box_score']
 df_final = df[final_cols]
 df_final[int_cols] = df_final[int_cols].astype(int)
+df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 
 
 if output_type == 'tsv':
