@@ -16,15 +16,15 @@ from utils import seq2kmer, kmer_score_per_nt, batch_generator, shap_batch
 
 # Define model path and other variables
 model_path = str(sys.argv[1])
-cd_df = pd.read_csv(sys.argv[2], names = ['chr', 'start', 'end', 'gene_id', 
-                            'score', 'strand', 'block_id', 
-                            f'extended_{fixed_length}nt_sequence'], sep='\t')
 pretrained_model = str(sys.argv[3])
 tokenizer_path = str(sys.argv[4])
 fixed_length = int(sys.argv[5])
 output_df = str(sys.argv[6])
 batch_size = int(sys.argv[7])
 num_labels = int(sys.argv[8])
+cd_df = pd.read_csv(sys.argv[2], names = ['chr', 'start', 'end', 'gene_id', 
+                            'score', 'strand', 'block_id', 
+                            f'extended_{fixed_length}nt_sequence'], sep='\t')
 
 
 # Define if we use GPU (CUDA) or CPU

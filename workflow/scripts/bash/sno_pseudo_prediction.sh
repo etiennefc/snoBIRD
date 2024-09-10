@@ -26,6 +26,7 @@ pip install pandas==2.0.0 --no-index
 pip install scikit_learn==1.3.0 --no-index
 pip install numpy==1.24.2 --no-index
 pip install transformers==4.31.0 --no-index
+pip install shap --no-index
 echo Activated env
 
 
