@@ -90,7 +90,7 @@ df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 
 if output_type == 'tsv':
     df_final.to_csv(output_, sep='\t', index=False)
-if output_type == 'bed':
+elif output_type == 'bed':
     df_final['empty_score'] = '.'
     bed_cols = ['chr', 'start', 'end', 'gene_id', 'empty_score', 'strand', 
                 'attributes']
@@ -105,10 +105,10 @@ if output_type == 'bed':
         return df.apply(lambda row: '; '.join(
                         [f"{col}={row[col]}" for col in col_names]), axis=1)
 
-    df_final['attributes'] = create_attributes(df, att_cols)
+    df_final['attributes'] = create_attributes(df_final, att_cols)
     df_final[bed_cols].to_csv(output_, sep='\t', index=False, header=False)
 
-if output_type == 'fa':
+elif output_type == 'fa':
     with open(output_, 'w') as f:
         for row in df_final.iterrows():
             gene_id = row[1]['gene_id']
