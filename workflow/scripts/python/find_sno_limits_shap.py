@@ -55,6 +55,8 @@ df[['chr', 'start', 'end', 'strand']] = df.apply(ut.get_sno_location, axis=1)
 # Get predicted sequence as well as predicted extended sequence
 # These sequence will be used to determine the snoRNA structure stability 
 # and terminal stem stability
+df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence']], 
+                how='left', on='gene_id')
 df['predicted_sequence'] = df.apply(ut.get_seq, axis=1)
 
 # find extended seq (15 nt flanking the snoRNA) to compute the 

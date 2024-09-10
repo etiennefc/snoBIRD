@@ -54,6 +54,8 @@ df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence',
 df[['chr', 'start', 'end', 'strand']] = df.apply(ut.get_sno_location, axis=1)
 
 # Get predicted sequence 
+df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence']], 
+                how='left', on='gene_id')
 df['predicted_sequence'] = df.apply(ut.get_seq, axis=1)
 
 # Correct box position based on the predicted sequence, not the extended window
