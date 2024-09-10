@@ -62,9 +62,9 @@ def get_chunk_names(len_seq, chr_name, max_size=5000000, fixed_length=194):
     # the last x nt (where x<fixed_length) are concatenated to the previous 
     # chunk to form the real last chunk. This is only for seq_ > 2 * max_size
     if (len_seq % max_size != 0) & (len_seq % max_size >= fixed_length) & (
-        len_seq > max_size * 2):
+        len_seq > max_size):
         last_chunk = 1
-    if len_seq < max_size:
+    elif len_seq < max_size:
         last_chunk = 1  # last and only chunk
     num_files = (len_seq // max_size) + last_chunk
     
