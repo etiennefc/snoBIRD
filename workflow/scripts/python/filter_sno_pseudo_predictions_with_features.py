@@ -83,7 +83,7 @@ final_cols = ['gene_id', 'chr', 'start', 'end', 'strand',
 int_cols = ['start', 'end', 'C_START', 'C_END', 'D_START', 'D_END', 
             'C_PRIME_START', 'C_PRIME_END', 'D_PRIME_START', 'D_PRIME_END', 
             'box_score']
-df_final = df[final_cols]
+df_final = df_final[final_cols]
 df_final[int_cols] = df_final[int_cols].astype(int)
 df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 
