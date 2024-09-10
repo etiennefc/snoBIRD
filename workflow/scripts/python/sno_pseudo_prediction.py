@@ -102,12 +102,13 @@ for i, ev_batch in enumerate(eval_dataloader):
         ev_preds += pred_labels.tolist()
         probs += highest_prob.tolist()
 
-
+sp.call('echo Finished predicting', shell=True)
 # Save predictions
 df = pd.DataFrame({'probability_expressed_pseudogene': probs, 
                     'second_model_prediction': ev_preds})
 df = pd.concat([first_preds_df[
                 ['chr', 'start', 'end', 'gene_id', 'block_id']
                 ].reset_index(drop=True), df], axis=1)
+sp.call('echo Finished saving', shell=True)
 df.to_csv(df_preds, sep='\t', index=False)
 

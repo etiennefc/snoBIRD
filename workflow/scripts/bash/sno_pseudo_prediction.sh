@@ -40,4 +40,4 @@ $output_preds \
 $batch_size \
 $num_labels
 
-echo Predictions with SnoBIRD's second model (expressed vs pseudogene) completed!
+echo "Predictions with SnoBIRD second model (expressed vs pseudogene) completed!"
