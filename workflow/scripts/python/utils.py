@@ -890,49 +890,54 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
     # Apply 1st filter post-snoBIRD's 2nd model based on prediction probability
     # (minor change to prediction if pred probability > 0.999 (high prob); 
     # major changes if pred probability is <= 0.999 (low prob))
-    minor_change = df[df[prob_column] > prob_thresh]
-    major_change = df[df[prob_column] <= prob_thresh]
+    minor_change = df[df[prob_column] > float(prob_thresh)]
+    major_change = df[df[prob_column] <= float(prob_thresh)]
     changed_id = []
 
     # FIRST FILTER: on prediction with low probability (<=0.999)
     # If C box has >=2 mutations and D box has >=1 mutation --> snoRNA_pseudo
     major_change.loc[(~major_change['gene_id'].isin(changed_id)) & (
-                    major_change['score_c'] >= score_c) & (
-                    major_change['score_d'] >= score_d), 
+                    major_change['score_c'] >= int(score_c)) & (
+                    major_change['score_d'] >= int(score_d)), 
                     new_pred_column] = 'CD_snoRNA_pseudogene'
     changed_id.extend(list(major_change[(~major_change['gene_id'].isin(
                             changed_id)) & (
-                            major_change['score_c'] >= score_c) & (
-                            major_change['score_d'] >= score_d)]['gene_id']))
+                            major_change['score_c'] >= int(score_c)) & (
+                            major_change['score_d'] >= int(score_d))][
+                                                            'gene_id']))
     
     # SECOND FILTER: on prediction with low probability (<=0.999)
     # If terminal combined < -25 --> expressed_CD_snoRNA
     major_change.loc[(~major_change['gene_id'].isin(changed_id)) & (
-                    major_change['terminal_combined'] <= terminal_combined), 
+                    major_change['terminal_combined'] <= float(
+                    terminal_combined)), 
                     new_pred_column] = 'expressed_CD_snoRNA'
     changed_id.extend(list(major_change[(~major_change['gene_id'].isin(
                     changed_id)) & (
-                    major_change['terminal_combined'] <= terminal_combined)][
+                    major_change['terminal_combined'] <= float(
+                                                        terminal_combined))][
                                                                 'gene_id']))
     
     # THIRD FILTER: on prediction with low probability (<=0.999)
     # If <= 2 features are "favorable" for expression --> CD_snoRNA_pseudogene
     major_change.loc[(~major_change['gene_id'].isin(changed_id)) & (((
-            major_change['terminal_combined'] <= terminal_combined).astype(
-                int) + 
-            (major_change['normalized_sno_stability'] <= sno_mfe).astype(int) + 
-            (major_change['box_score'] <= box_score).astype(int) + (
-            major_change['score_c'] <= score_c).astype(int) + (
-            major_change['score_d'] < score_d).astype(int)) <= 2), 
+            major_change['terminal_combined'] <= float(
+                terminal_combined)).astype(int) + 
+            (major_change['normalized_sno_stability'] <= float(
+            sno_mfe)).astype(int) + 
+            (major_change['box_score'] <= int(box_score)).astype(int) + (
+            major_change['score_c'] <= int(score_c)).astype(int) + (
+            major_change['score_d'] < int(score_d)).astype(int)) <= 2), 
             new_pred_column] = 'CD_snoRNA_pseudogene'
     changed_id.extend(list(major_change.loc[(~major_change['gene_id'].isin(
                     changed_id)) & (((major_change[
-                    'terminal_combined'] <= terminal_combined).astype(int) + 
-                (major_change['normalized_sno_stability'] <= sno_mfe).astype(
+                    'terminal_combined'] <= float(terminal_combined)).astype(
                     int) + 
-                (major_change['box_score'] <= box_score).astype(int) + (
-                major_change['score_c'] <= score_c).astype(int) + (
-                major_change['score_d'] < score_d).astype(int)) <= 2)][
+                (major_change['normalized_sno_stability'] <= float(
+                sno_mfe)).astype(int) + 
+                (major_change['box_score'] <= int(box_score)).astype(int) + (
+                major_change['score_c'] <= int(score_c)).astype(int) + (
+                major_change['score_d'] < int(score_d)).astype(int)) <= 2)][
                                                                 'gene_id']))
     
     # FOURTH FILTER: on prediction with high probability (>0.999) 
@@ -942,13 +947,13 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
     minor_change.loc[(
                 minor_change.last_predicted_label == 'CD_snoRNA_pseudogene') & 
                 (((
-                minor_change['terminal_combined'] <= terminal_combined).astype(
-                    int) + 
-                (minor_change['normalized_sno_stability'] <= sno_mfe).astype(
-                    int) + 
-                (minor_change['box_score'] <= box_score).astype(int) + (
-                minor_change['score_c'] <= score_c).astype(int) + (
-                minor_change['score_d'] < score_d).astype(int)) >= 4), 
+                minor_change['terminal_combined'] <= float(
+                    terminal_combined)).astype(int) + 
+                (minor_change['normalized_sno_stability'] <= float(
+                sno_mfe)).astype(int) + 
+                (minor_change['box_score'] <= int(box_score)).astype(int) + (
+                minor_change['score_c'] <= int(score_c)).astype(int) + (
+                minor_change['score_d'] < int(score_d)).astype(int)) >= 4), 
                 new_pred_column] = 'expressed_CD_snoRNA'
     
 

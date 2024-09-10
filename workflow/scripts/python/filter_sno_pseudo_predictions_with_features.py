@@ -11,6 +11,7 @@ import utils as ut
 
 # Load dfs, params and define output
 sno_df = pd.read_csv(snakemake.input.sno_limits, sep='\t')
+sno_df = sno_df.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 second_model_preds = pd.read_csv(snakemake.input.sno_pseudo_preds, sep='\t', 
                     names=['chr_window', 'start_window', 'end_window', 
                     'gene_id', 'block_id', 'probability_expressed_pseudogene', 
@@ -50,6 +51,11 @@ sno_df['terminal_stem_score'] = sno_df['terminal_combined'].round(2)
 
 
 # Filter predictions using the feature values
+int_cols = ['score_c', 'score_d', 'box_score']
+float_cols = ['probability_expressed_pseudogene', 'terminal_combined', 
+            'normalized_sno_stability']
+sno_df[int_cols] = sno_df[int_cols].astype(int)
+sno_df[float_cols] = sno_df[float_cols].astype(float)
 sno_df = ut.feature_filters(sno_df, 'probability_expressed_pseudogene', 
             'second_model_prediction', 'predicted_label', 
             terminal_combined=terminal_combined_thresh, sno_mfe=sno_mfe_thresh, 

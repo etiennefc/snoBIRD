@@ -76,5 +76,6 @@ final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 'probability_CD',
         'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END', 
         'predicted_sequence', 'predicted_extended_sequence', 
         f'extended_{fixed_length}nt_sequence']
+df = df.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 df[final_cols].to_csv(snakemake.output.df, sep='\t', index=False)
 
