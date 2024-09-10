@@ -78,7 +78,7 @@ pipe2 = TextClassificationPipeline(model=model, tokenizer=tokenizer,
 # the window for a given prediction
 all_scores = []
 for batch in batch_generator(all_seqs, batch_size):
-    batch_scores = shap_batch(batch, all_gene_ids)
+    batch_scores = shap_batch(batch, all_gene_ids, pipe2)
     all_scores.extend(batch_scores)
 
 df = pd.DataFrame(all_scores, 

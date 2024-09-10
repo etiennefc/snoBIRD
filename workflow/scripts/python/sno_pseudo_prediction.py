@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import sys
+import os
 import pandas as pd
 import torch
 import torch.nn as nn
