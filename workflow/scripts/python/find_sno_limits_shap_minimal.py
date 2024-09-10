@@ -47,7 +47,8 @@ df = ut.find_all_boxes(shap_df, fixed_length, shap_cols, C_range,
                             D_range, flanking_nt)
 
 # Get genomic location of snoRNA based on C and D positions
-df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence']], 
+df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence',
+                'chr_window', 'strand_window', 'start_window', 'end_window']], 
                 how='left', on='gene_id')
 
 df[['chr', 'start', 'end', 'strand']] = df.apply(ut.get_sno_location, axis=1)
