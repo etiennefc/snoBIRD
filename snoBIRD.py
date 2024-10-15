@@ -28,6 +28,21 @@ def find_download(dir_="workflow/data/references/", quiet=False):
         print(f'SnoBIRD models {model_download}')
     return model_download_bool
 
+def arg_value_range(arg_, arg_name, positive=True):
+    """ Find if provided arg is within the allowed value range."""
+    if positive == True:  # > 0
+        if arg_ <= 0:
+            raise ValueError(f'Provided {arg_name}: "{arg_}" must be > 0.')
+    elif positive == "zero_or_more":  # >= 0
+        if arg_ < 0:
+            raise ValueError(f'Provided {arg_name}: "{arg_}" must be >= 0.')
+    elif positive == "probability":  # must be between 0 and 1
+        if (arg_ <= 0) | (arg_ >= 1): 
+            raise ValueError(
+                f'Provided {arg_name}: "{arg_}" must be > 0 and < 1.')
+    elif positive == False: # < 0
+        if arg_ > 0:
+            raise ValueError(f'Provided {arg_name}: "{arg_}" must be <= 0.')
 
 def is_sbatch_installed():
     """ Find if SLURM's sbatch command is installed to see if the user is on a 
@@ -191,7 +206,7 @@ def main(no_arg=False):
         "without this option")
              
     
-    #optional_group.add_argument(profile local or cluster)
+
     #parser.add_argument('--run_rule', type=str, help="Rule to run")
     #parser.add_argument('--cores', type=int, help="Number of cores")
     
@@ -209,6 +224,20 @@ def main(no_arg=False):
     if no_arg == True:
         parser.print_help()
         exit()
+
+    # Verify if custom arg is in the right value range
+    arg_value_range(args.chunk_size, "chunk_size")
+    arg_value_range(args.step_size, "step_size")
+    arg_value_range(args.batch_size, "batch_size")
+    arg_value_range(args.consecutive_windows, "consecutive_windows")
+    arg_value_range(args.box_score, "box_score", "zero_or_more")
+    arg_value_range(args.score_c, "score_c", "zero_or_more")
+    arg_value_range(args.score_d, "score_d", "zero_or_more")
+    arg_value_range(args.prob_first_model, "prob_first_model", "probability")
+    arg_value_range(args.prob_second_model, "prob_second_model", "probability")
+    arg_value_range(args.terminal_stem_score, "terminal_stem_score", False)
+    arg_value_range(args.normalized_sno_stability, "normalized_sno_stability", 
+                    False)
 
 
     # Define the required args effects
