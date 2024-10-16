@@ -9,6 +9,9 @@ __default__:
 
 merge_filter_windows:
     mem-per-cpu: 16G
+    gpus-per-node: 1
+    cpus-per-task: 2
+    time: 0-2:00:00
 
 genome_prediction:
     gpus-per-node: 1

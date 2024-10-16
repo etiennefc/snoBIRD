@@ -51,12 +51,16 @@ rule merge_filter_windows:
         concat these windows in one file (across chr and/or chr chunks), filter 
         the windows by score and consecutive blocks of nt and merge afterwards 
         into one block per prediction (and one center window surrounding the 
-        snoRNA)."""
+        snoRNA). Predict, if step_size>1, if the center window is also 
+        predicted as a C/D to filter out even more predictions."""
     input:
         predictions = expand(rules.genome_prediction.output.windows, 
                             chr_=config.get('CHR_')),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
-        input_fasta = config.get("input_fasta")
+        input_fasta = config.get("input_fasta"),
+        pretrained_model = rules.download_DNA_BERT.output.dnabert,
+        tokenizer = rules.download_DNA_BERT.output.tokenizer,
+        snoBIRD = rules.download_models.output.model1,
     output:
         filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
         center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
@@ -64,13 +68,22 @@ rule merge_filter_windows:
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),
         chunk_size = config.get("chunk_size"),
-        strand = config.get("strand"),
+        gpu = config.get('gpu_generation'),
+        batch_size = config.get("batch_size"),
+        num_labels = config.get('num_labels'),
         prob_threshold = config.get("min_probability_threshold_first_model"),
-        min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold")
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/merge_filter_windows.py"
+        min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold"),
+        python_script = "scripts/python/merge_filter_windows.py"
+    #conda:
+    #    "../envs/python_new.yaml"
+    shell:
+        "bash scripts/bash/merge_filter_windows.sh "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{input.predictions} {input.snoBIRD} {input.input_fasta_dir} {input.input_fasta} "
+        "{output.filtered_preds} {output.center_preds} "
+        "{params.fixed_length} {params.step_size} {params.chunk_size} "
+        "{params.batch_size} {params.num_labels} {params.prob_threshold} "
+        "{params.min_consecutive_windows_threshold} {params.python_script} "
 
 rule shap_snoBIRD:
     """ Compute SHAP values for each predicted C/D snoRNA. This is needed to 

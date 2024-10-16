@@ -716,17 +716,19 @@ def merge_rows(row1, row2):
         return None
 
 
-def centered_window(row, fixed_length):
+def centered_window(row, fixed_length=194):
     """
     From a large window, find the centered window of smaller fixed_length.
     """
     interval_length = row['end'] - row['start'] + 1
-    midpoint = row['start'] + (interval_length // 2)
+    diff_ = interval_length - fixed_length
+    right = diff_ // 2
+    left = diff_ - right
     
     # For odd_interval length, it shifts 1 nt more to the left 
     # than to the right
-    start = midpoint - (fixed_length // 2) - 1
-    end = midpoint + (fixed_length // 2) - 1
+    start = row['start'] + left
+    end = row['end'] - right
 
     return pd.Series([start, end])
 
