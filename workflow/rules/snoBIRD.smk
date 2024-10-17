@@ -63,7 +63,7 @@ rule merge_filter_windows:
         snoBIRD = rules.download_models.output.model1
     output:
         filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
-        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed
+        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     params:
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),
