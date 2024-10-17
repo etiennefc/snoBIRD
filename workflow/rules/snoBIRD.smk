@@ -54,8 +54,8 @@ rule merge_filter_windows:
         snoRNA). Predict, if step_size>1, if the center window is also 
         predicted as a C/D to filter out even more predictions."""
     input:
-        #predictions = expand(rules.genome_prediction.output.windows, 
-        #                    chr_=config.get('CHR_')),
+        predictions = expand(rules.genome_prediction.output.windows, 
+                            chr_=config.get('CHR_')),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta"),
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
