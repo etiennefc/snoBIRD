@@ -1,0 +1,17 @@
+channels:
+  - default
+  - bioconda
+  - conda-forge
+  - pytorch
+dependencies:
+  - python 
+  - numpy
+  - pandas
+  - scipy
+  - pytorch-gpu
+  - regex
+  - transformers
+  - biopython
+  - pybedtools
+  - shap 
+  - viennarna
