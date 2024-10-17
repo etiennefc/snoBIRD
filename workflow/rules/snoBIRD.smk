@@ -98,16 +98,16 @@ rule shap_snoBIRD:
         gpu = config.get('gpu_generation'),
         batch_size = config.get("batch_size"),
         num_labels = config.get('num_labels')
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/shap_snoBIRD.py"
-    #shell:
-    #    "bash scripts/bash/shap_snoBIRD.sh "
-    #    "{input.snoBIRD} {input.preds} "
-    #    "{input.pretrained_model} {input.tokenizer} "
-    #    "{params.fixed_length} {params.python_script} "
-    #    "{output.shap_df} {params.batch_size} {params.num_labels}"
+    #conda:
+    #    "../envs/python_new.yaml"
+    #script:
+    #    "../scripts/python/shap_snoBIRD.py"
+    shell:
+        "bash scripts/bash/shap_snoBIRD.sh "
+        "{input.snoBIRD} {input.preds} "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{params.fixed_length} {params.python_script} "
+        "{output.shap_df} {params.batch_size} {params.num_labels}"
 
 rule find_sno_limits_shap_minimal:
     """ Run this rule if the user wants to run ONLY the first SnoBIRD model 

@@ -33,7 +33,7 @@ echo Activated env
 
 
 # To fix bug happening on V100l (CUDA not available otherwise...)
-#nvidia-modprobe
+nvidia-modprobe
 
 
 python3 $python_script \
