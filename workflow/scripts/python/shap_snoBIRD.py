@@ -15,15 +15,27 @@ import shap
 from utils import seq2kmer, kmer_score_per_nt, batch_generator, shap_batch
 
 # Define model path and other variables
-model_path = str(sys.argv[1])
-pretrained_model = str(sys.argv[3])
-tokenizer_path = str(sys.argv[4])
-fixed_length = int(sys.argv[5])
-output_df = str(sys.argv[6])
-batch_size = int(sys.argv[7])
-num_labels = int(sys.argv[8])
-cd_df = pd.read_csv(sys.argv[2], names = ['chr', 'start', 'end', 'gene_id', 
-                            'score', 'strand', 'block_id', 
+#model_path = str(sys.argv[1])
+#pretrained_model = str(sys.argv[3])
+#tokenizer_path = str(sys.argv[4])
+#fixed_length = int(sys.argv[5])
+#output_df = str(sys.argv[6])
+#batch_size = int(sys.argv[7])
+#num_labels = int(sys.argv[8])
+#cd_df = pd.read_csv(sys.argv[2], names = ['chr', 'start', 'end', 'gene_id', 
+#                            'score', 'strand', 'block_id', 
+#                            f'extended_{fixed_length}nt_sequence'], sep='\t')
+
+model_path = str(snakemake.input.snoBIRD)
+pretrained_model = str(snakemake.input.pretrained_model)
+tokenizer_path = str(snakemake.input.tokenizer)
+fixed_length = int(snakemake.params.fixed_length)
+output_df = str(snakemake.output.shap_df)
+batch_size = int(snakemake.params.batch_size)
+num_labels = int(snakemake.params.num_labels)
+cd_df = pd.read_csv(str(snakemake.input.preds), 
+                        names = ['chr', 'start', 'end', 'gene_id', 'score', 
+                                'strand', 'block_id', 
                             f'extended_{fixed_length}nt_sequence'], sep='\t')
 
 
@@ -77,8 +89,11 @@ pipe2 = TextClassificationPipeline(model=model, tokenizer=tokenizer,
 # Compute SHAP values for each prediction to find the importance of each nt in 
 # the window for a given prediction
 all_scores = []
-for batch in batch_generator(all_seqs, batch_size):
-    batch_scores = shap_batch(batch, all_gene_ids, pipe2)
+index_i = 0
+for i, batch in enumerate(batch_generator(all_seqs, batch_size)):
+    batch_scores = shap_batch(batch, 
+                            all_gene_ids[index_i:index_i + len(batch)], pipe2)
+    index_i += len(batch)
     all_scores.extend(batch_scores)
 
 df = pd.DataFrame(all_scores, 

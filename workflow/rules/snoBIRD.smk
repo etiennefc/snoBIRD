@@ -54,8 +54,8 @@ rule merge_filter_windows:
         snoRNA). Predict, if step_size>1, if the center window is also 
         predicted as a C/D to filter out even more predictions."""
     input:
-        predictions = expand(rules.genome_prediction.output.windows, 
-                            chr_=config.get('CHR_')),
+        #predictions = expand(rules.genome_prediction.output.windows, 
+        #                    chr_=config.get('CHR_')),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta"),
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
@@ -98,14 +98,16 @@ rule shap_snoBIRD:
         gpu = config.get('gpu_generation'),
         batch_size = config.get("batch_size"),
         num_labels = config.get('num_labels')
-    #conda:
-    #    "../envs/python_new.yaml"
-    shell:
-        "bash scripts/bash/shap_snoBIRD.sh "
-        "{input.snoBIRD} {input.preds} "
-        "{input.pretrained_model} {input.tokenizer} "
-        "{params.fixed_length} {params.python_script} "
-        "{output.shap_df} {params.batch_size} {params.num_labels}"
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/shap_snoBIRD.py"
+    #shell:
+    #    "bash scripts/bash/shap_snoBIRD.sh "
+    #    "{input.snoBIRD} {input.preds} "
+    #    "{input.pretrained_model} {input.tokenizer} "
+    #    "{params.fixed_length} {params.python_script} "
+    #    "{output.shap_df} {params.batch_size} {params.num_labels}"
 
 rule find_sno_limits_shap_minimal:
     """ Run this rule if the user wants to run ONLY the first SnoBIRD model 
