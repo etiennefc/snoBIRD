@@ -60,10 +60,10 @@ rule merge_filter_windows:
         input_fasta = config.get("input_fasta"),
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
         tokenizer = rules.download_DNA_BERT.output.tokenizer,
-        snoBIRD = rules.download_models.output.model1,
+        snoBIRD = rules.download_models.output.model1
     output:
         filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
-        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
+        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed
     params:
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),
@@ -74,16 +74,10 @@ rule merge_filter_windows:
         prob_threshold = config.get("min_probability_threshold_first_model"),
         min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold"),
         python_script = "scripts/python/merge_filter_windows.py"
-    #conda:
-    #    "../envs/python_new.yaml"
-    shell:
-        "bash scripts/bash/merge_filter_windows.sh "
-        "{input.pretrained_model} {input.tokenizer} "
-        "{input.predictions} {input.snoBIRD} {input.input_fasta_dir} {input.input_fasta} "
-        "{output.filtered_preds} {output.center_preds} "
-        "{params.fixed_length} {params.step_size} {params.chunk_size} "
-        "{params.batch_size} {params.num_labels} {params.prob_threshold} "
-        "{params.min_consecutive_windows_threshold} {params.python_script} "
+    conda:
+        "../envs/python_new.yaml"
+    script:
+        "../scripts/python/merge_filter_windows.py"
 
 rule shap_snoBIRD:
     """ Compute SHAP values for each predicted C/D snoRNA. This is needed to 

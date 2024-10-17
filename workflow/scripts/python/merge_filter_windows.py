@@ -12,25 +12,24 @@ from torch.utils.data import TensorDataset, DataLoader
 import transformers
 from transformers import AutoTokenizer, BertForSequenceClassification
 
-# Define inputs, parameters and outputs
-pretrained_model = str(sys.argv[1])
-tokenizer_path = str(sys.argv[2])
-all_preds = list(sys.argv[3])
-model_path = str(sys.argv[4])
-input_fasta_dir = str(sys.argv[5])
-input_fasta = str(sys.argv[6])
+# Define inputs, outputs and parameters
+pretrained_model = str(snakemake.input.pretrained_model)
+tokenizer_path = str(snakemake.input.tokenizer)
+all_preds = list(snakemake.input.predictions)
+model_path = str(snakemake.input.snoBIRD)
+input_fasta_dir = str(snakemake.input.input_fasta_dir)
+input_fasta = str(snakemake.input.input_fasta)
 
-output_df = str(sys.argv[7])
-output_df_center = str(sys.argv[8])
+output_df = str(snakemake.output.filtered_preds)
+output_df_center = str(snakemake.output.center_preds)
 
-fixed_length = int(sys.argv[9])
-step_size = int(sys.argv[10])
-chunk_size = int(sys.argv[11])
-batch_size = int(sys.argv[12])
-num_labels = int(sys.argv[13])
-prob_threshold = float(sys.argv[14])
-min_consecutive_windows = int(sys.argv[15])
-
+fixed_length = int(snakemake.params.fixed_length)
+step_size = int(snakemake.params.step_size)
+chunk_size = int(snakemake.params.chunk_size)
+batch_size = int(snakemake.params.batch_size)
+num_labels = int(snakemake.params.num_labels)
+prob_threshold = float(snakemake.params.prob_threshold)
+min_consecutive_windows = int(snakemake.params.min_consecutive_windows_threshold)
 
 # Concat all predictions of first SnoBIRD model into 1 df (preds from all 
 # chr and/or chunks)
@@ -43,20 +42,16 @@ for p in all_preds:
     df = df[df['probability_first_model'] > prob_threshold]
     dfs.append(df)
 df_preds = pd.concat(dfs)
-sp.call('echo DF PREDS LOADED', shell=True)
-sp.call(f'echo {df_preds}', shell=True)
 
 # For chunks of chr, rectify genomic location of positive windows based on 
 # the number of previous chunks
 # Preds on - strand have already been corrected during genome_prediction 
 chunk_fa = [path for path in os.listdir(
             input_fasta_dir+'/fasta/') if '_chunk_' in path]
-sp.call(f'echo {chunk_fa}', shell=True)
 rectify_dict = {}
 if len(chunk_fa) > 0:
     for chunk in chunk_fa:
         with open(input_fasta_dir+'/fasta/'+chunk, 'r') as f:
-            sp.call(f'echo {chunk}', shell=True)
             first_line = f.readline().replace('>', '').replace('\n', '')
             chunk_name = first_line.split('  ')[0]
             chunk_number = int(chunk_name.split('_')[-1])
@@ -64,7 +59,6 @@ if len(chunk_fa) > 0:
             total_size = int(first_line.split(' ')[3].replace(
                             'total_size=', ''))
             rectify_dict[chunk_name] = (prev_size, total_size)
-sp.call('echo Rectify DICTIO', shell=True)
 
 def rectify_pos(row, chr_dict):
     # Rectify position based on the number of nt before a given chunk
@@ -79,8 +73,6 @@ df_preds = df_preds.apply(rectify_pos, axis=1, chr_dict=rectify_dict)
 df_preds['chr'] = df_preds['chr'].astype(str)
 df_preds = df_preds.sort_values(by=['chr', 'start', 'strand'])
 
-sp.call('echo Rectify POS', shell=True)
-sp.call(f'echo {df_preds}', shell=True)
 
 
 # Calculate difference in start positions between consecutive rows
@@ -106,7 +98,6 @@ df_preds['stretch_id'] = (df_preds['diff'] > 1).cumsum()
 df_preds['stretch_id'] =  'block_' + df_preds['stretch_id'].astype(str)
 df_preds = df_preds[['chr', 'start', 'end', 'stretch_id', 'strand', 
                     'probability_first_model']]
-sp.call('echo BEFORE MEERGE BLOCK', shell=True)
 df_preds.to_csv('temp_preds.bed', sep='\t', index=False, header=False)
 preds_bed = BedTool('temp_preds.bed')
 
