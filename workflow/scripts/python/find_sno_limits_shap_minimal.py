@@ -75,6 +75,7 @@ int_cols = ['start', 'end', 'C_START', 'C_END', 'D_START', 'D_END',
 df_final = df[final_cols]
 df_final[int_cols] = df_final[int_cols].astype(int)
 df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
+df_final = df_final.sort_values(by=['chr', 'strand', 'start'])
 
 if output_type == 'tsv':
     df_final.to_csv(snakemake.output.minimal_output, sep='\t', index=False)
