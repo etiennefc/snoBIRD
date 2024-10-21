@@ -120,14 +120,14 @@ rule find_sno_limits_shap_minimal:
         shap_df = rules.shap_snoBIRD.output.shap_df,
         preds = rules.merge_filter_windows.output.center_preds
     output:
-        minimal_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
+        minimal_output = 'results/final/{output_name}.{output_type}'
     params:
         output_type = config.get("output_type"),
         fixed_length = config.get("fixed_length"),
         min_box_dist = config.get("min_box_dist"),
         flanking_nt = config.get("flanking_nt")
     conda:
-        "../envs/python_new.yaml"
+        "../envs/python_gpu.yaml"
     script:
         "../scripts/python/find_sno_limits_shap_minimal.py"
 
@@ -184,7 +184,7 @@ rule filter_sno_pseudo_predictions_with_features:
         sno_limits = rules.find_sno_limits_shap.output.df,
         sno_pseudo_preds = rules.sno_pseudo_prediction.output.windows
     output:
-        final_output = 'results/final/snoBIRD_complete_predictions.{output_type}'
+        final_output = 'results/final/{output_name}.{output_type}'
     params:
         output_type = config.get("output_type"),
         fixed_length = config.get("fixed_length"),
@@ -195,6 +195,6 @@ rule filter_sno_pseudo_predictions_with_features:
         terminal_stem_score_thresh = config.get("terminal_stem_score_threshold"),
         normalized_sno_stability_thresh = config.get("normalized_sno_stability_threshold")
     conda:
-        "../envs/python_new.yaml"
+        "../envs/python_gpu.yaml"
     script:
         "../scripts/python/filter_sno_pseudo_predictions_with_features.py"

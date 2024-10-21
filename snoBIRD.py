@@ -144,6 +144,12 @@ def main(no_arg=False):
         help='Number of sequences per batch that are processed in parallel '+
             'by SnoBIRD (default: 128); increasing this number increases '+
             'VRAM/RAM usage', default=128)
+    optional_group.add_argument('--output_name', '-o', type=str, 
+        help="Desired output file name (no extension needed) that will be "+
+            "located in the workflow/results/final/ directory "+
+            "(default: snoBIRD_complete_predictions)",
+            default="snoBIRD_complete_predictions")
+
     optional_group.add_argument('--output_type', type=str, 
         choices=['tsv', 'fa', 'bed'],
         help="Desired output file type, i.e. either a tab-separated (.tsv), "+
@@ -303,6 +309,8 @@ def main(no_arg=False):
         config_l += f"batch_size={args.batch_size} "
     if args.chunks:
         config_l += f"chunks={args.chunks} "
+    if args.output_name:
+        config_l += f"output_name={args.output_name} "
     if args.output_type:
         config_l += f"output_type={args.output_type} "
     if args.gpu_generation:
@@ -347,8 +355,43 @@ def main(no_arg=False):
     ## Run Snakemake
     sp.call(snakemake_cmd, shell=True)
 
+    ## Return the actual command line that was run for reproducibility
+    if (args.download_model == False) & (args.unlock == False) & (
+        args.dryrun == True):
+        no_return_var = ['help', 'version', 'download_model', 'dryrun', 
+                        'unlock']
+        if args.first_model_only:
+            no_return_var.extend(['prob_second_model', 'box_score', 'score_c', 
+                'score_d', 'terminal_stem_score', 'normalized_sno_stability'])
+
+        cmd_line = "python3 snoBIRD.py "
+        dict_var = vars(args)
+        output_n = dict_var['output_name']
+        output_t = dict_var['output_type']
+        for k,v in dict_var.items():
+            if k not in no_return_var:
+                cmd_line += f"--{k} {v} "
+        return cmd_line, output_n, output_t
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         main(no_arg=True)
     else:
-        main()
+        arguments, output_final, ext_ = main()
+        sp.call('echo "####SnoBIRD report usage" >> snoBIRD_usage.log', 
+                                                                    shell=True)
+        sp.call('date >> snoBIRD_usage.log', shell=True)
+        sp.call('echo "##[Used command line]:" >> snoBIRD_usage.log', 
+                                                                    shell=True)
+        sp.call(f'echo {arguments} >> snoBIRD_usage.log', shell=True)
+        sp.call('echo "##[Desired output file location]:" >>snoBIRD_usage.log', 
+                                                                    shell=True)
+        sp.call(f'echo workflow/results/final/{output_final}.{ext_} >> '+
+                'snoBIRD_usage.log', shell=True)
+        sp.call('echo "##[Used packages versions]:" >> snoBIRD_usage.log', 
+                                                                    shell=True)
+        sp.call(f'pip list >> snoBIRD_usage.log', shell=True)
+        sp.call('echo "\n\n" >> snoBIRD_usage.log', shell=True)
+        #output_name
+        
+        # Return pip list, date

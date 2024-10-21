@@ -11,7 +11,7 @@ chunks = config.get("chunks")  # True or None
 chunk_size = config.get("chunk_size")  # int or None
 strand = config.get("strand")  # 'both', '+' or '-'
 batch_size = config.get('batch_size')
-#print(step_size, chunks, chunk_size, input_fasta)
+output_name_ = config.get('output_name')
 ext = config.get("output_type")
 
 include: "rules/common.smk"
@@ -24,19 +24,12 @@ if not config.get("download_model"):
         CHR_dict = get_chr_names(input_fasta, chunks, chunk_size)
         CHR_ = list(CHR_dict.keys())
         config['CHR_dict'] = CHR_dict
-    #CHR_ = [i for i in CHR_ if (i[0:2] == 'TEST') | (i[0:3] == '25_c')]
-    CHR_ = ['25_chunk_0', '25_chunk_1', 'W_chunk_0', 'W_chunk_1', 'W_chunk_2', 
-            'W_chunk_3', '31']
     
     config['CHR_'] = CHR_
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
         input:
-            #windows = expand("results/predictions/first_model/positive_windows_{chr_}.tsv", chr_=CHR_),
-            #filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
-            final_output = expand('results/final/snoBIRD_complete_predictions.{output_type}', output_type=ext)
-            #split_chr_dir = "data/references/genome_fa/"
-        # Specify which output will be created depending on the user-defined params
+            final_output = expand('results/final/{output_name}.{output_type}', output_type=ext, output_name=output_name_)
 
 rule all_downloads:
     """ Download all models that constitute SnoBIRD."""
