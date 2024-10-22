@@ -257,8 +257,8 @@ def main(no_arg=False):
                     '</home/your_username/full_path/to/input_fasta.fa>')
         if find_download(quiet=True) == False:
             if not args.download_model:
-                print('SnoBIRD models need to be downloaded first with:\n'+
-                        'python3 snoBIRD.py --download_model')
+                print('SnoBIRD models and env need to be downloaded first '+
+                        'with:\npython3 snoBIRD.py --download_model')
                 exit()
     else:
         if args.download_model:
