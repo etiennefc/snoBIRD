@@ -290,11 +290,13 @@ def main(no_arg=False):
                 "chunks of chr that will be created)...This may take a bit of"+
                 " time for large genomes (ex: <1 min for the human genome).\n")
         else:
-            snakemake_cmd = "cd workflow && snakemake all_downloads -n " 
+            snakemake_cmd = "cd workflow && snakemake all_downloads -n "+ \
+                            profile_local 
     if not args.local_profile:  # default value
         if not args.download_model and not args.dryrun:
             if is_sbatch_installed():
-                snakemake_cmd = "cd workflow && snakemake " + profile_slurm
+                snakemake_cmd = "cd workflow && snakemake " + \
+                                profile_slurm
             else:
                 raise ModuleNotFoundError("It seems that you are not on a "+
                 "SLURM cluster, as sbatch is not installed. If you want to "+
@@ -357,7 +359,7 @@ def main(no_arg=False):
 
     ## Return the actual command line that was run for reproducibility
     if (args.download_model == False) & (args.unlock == False) & (
-        args.dryrun == True):
+        args.dryrun == False):
         no_return_var = ['help', 'version', 'download_model', 'dryrun', 
                         'unlock']
         if args.first_model_only:
@@ -377,21 +379,21 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         main(no_arg=True)
     else:
-        arguments, output_final, ext_ = main()
-        sp.call('echo "####SnoBIRD report usage" >> snoBIRD_usage.log', 
+        result = main()
+        if result is not None:
+            arguments, output_final, ext_ = result
+            sp.call('echo "####SnoBIRD report usage" >> snoBIRD_usage.log', 
                                                                     shell=True)
-        sp.call('date >> snoBIRD_usage.log', shell=True)
-        sp.call('echo "##[Used command line]:" >> snoBIRD_usage.log', 
+            sp.call('date >> snoBIRD_usage.log', shell=True)
+            sp.call('echo "##[Used command line]:" >> snoBIRD_usage.log', 
                                                                     shell=True)
-        sp.call(f'echo {arguments} >> snoBIRD_usage.log', shell=True)
-        sp.call('echo "##[Desired output file location]:" >>snoBIRD_usage.log', 
+            sp.call(f'echo {arguments} >> snoBIRD_usage.log', shell=True)
+            sp.call('echo "##[Desired output file location]:" >> '+
+                    'snoBIRD_usage.log', shell=True)
+            sp.call(f'echo workflow/results/final/{output_final}.{ext_} >> '+
+                    'snoBIRD_usage.log', shell=True)
+            sp.call('echo "##[Used packages versions]:" >> snoBIRD_usage.log', 
                                                                     shell=True)
-        sp.call(f'echo workflow/results/final/{output_final}.{ext_} >> '+
-                'snoBIRD_usage.log', shell=True)
-        sp.call('echo "##[Used packages versions]:" >> snoBIRD_usage.log', 
-                                                                    shell=True)
-        sp.call(f'pip list >> snoBIRD_usage.log', shell=True)
-        sp.call('echo "\n\n" >> snoBIRD_usage.log', shell=True)
-        #output_name
+            sp.call(f'pip list >> snoBIRD_usage.log', shell=True)
+            sp.call('echo "\n\n" >> snoBIRD_usage.log', shell=True)
         
-        # Return pip list, date

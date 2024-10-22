@@ -3,6 +3,7 @@
 jobs: 999
 use-conda: True
 conda-frontend: mamba
+quiet: rules
 
 # Snakemake cluster parameters
 immediate-submit: True
