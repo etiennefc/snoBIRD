@@ -10,7 +10,8 @@ def find_download(dir_="workflow/data/references/", quiet=False):
     model_download_bool = False
     if (os.path.exists(dir_+'models')) & (
         os.path.exists(dir_+'DNA_BERT_6_tokenizer')) & (
-            os.path.exists(dir_+'DNA_BERT_6_pretrained_model')
+            os.path.exists(dir_+'DNA_BERT_6_pretrained_model') & (
+                os.path.exists('workflow/snoBIRD_env.tar.gz'))
         ):
         potential_downloads_model = os.listdir(dir_+'models')
         potential_downloads_bert = os.listdir(
@@ -25,7 +26,7 @@ def find_download(dir_="workflow/data/references/", quiet=False):
                         "run SnoBIRD without the -d/--download_model option.")
             model_download_bool = True
     if quiet == False:
-        print(f'SnoBIRD models {model_download}')
+        print(f'SnoBIRD models and env {model_download}')
     return model_download_bool
 
 def arg_value_range(arg_, arg_name, positive=True):

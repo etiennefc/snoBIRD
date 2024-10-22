@@ -13,6 +13,7 @@ strand = config.get("strand")  # 'both', '+' or '-'
 batch_size = config.get('batch_size')
 output_name_ = config.get('output_name')
 ext = config.get("output_type")
+profile = config.get("profile")
 
 include: "rules/common.smk"
 include: "rules/download.smk"
@@ -32,12 +33,14 @@ if not config.get("download_model"):
             final_output = expand('results/final/{output_name}.{output_type}', output_type=ext, output_name=output_name_)
 
 rule all_downloads:
-    """ Download all models that constitute SnoBIRD."""
+    """ Download all models that constitute SnoBIRD and create the virtualenv 
+        in which SnoBIRD will be run."""
     input:
         model1 = "data/references/models/snoBIRD_first_model.pt",
         model2 = "data/references/models/snoBIRD_second_model.pt",
         tokenizer = "data/references/DNA_BERT_6_tokenizer/",
-        dnabert = "data/references/DNA_BERT_6_pretrained_model/"
+        dnabert = "data/references/DNA_BERT_6_pretrained_model/",
+        env = "envs/snoBIRD_env.tar.gz"
 
 
 

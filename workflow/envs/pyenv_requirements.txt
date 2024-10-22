@@ -1,0 +1,9 @@
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.14.1
+regex==2024.9.11
+transformers==4.45.2
+biopython==1.84
+pybedtools==0.10.0
+shap==0.43.0
+viennarna==2.7.0

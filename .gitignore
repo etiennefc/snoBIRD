@@ -2,3 +2,4 @@ workflow/.snakemake/
 workflow/scripts/python/__pycache__/
 workflow/data/
 workflow/results/
+workflow/envs/snoBIRD_env.tar.gz

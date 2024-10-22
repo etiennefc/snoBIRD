@@ -122,7 +122,22 @@ def get_chr_names(input_fasta, chunk_value, chunk_size):
         return all_chr_chunks
 
 
-
+def is_sbatch_installed2():
+    """ Find if SLURM's sbatch command is installed to see if the user is on a 
+        local computer or a SLURM cluster."""
+    try:
+        # Try to run sbatch --version to check if sbatch is installed
+        result = sp.run(['sbatch', '--version'], stdout=sp.PIPE, 
+                    stderr=sp.PIPE, text=True)
+        
+        # If the command was successful, return True
+        if result.returncode == 0:
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        # If sbatch is not found, return False
+        return False
 
 
 

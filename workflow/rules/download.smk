@@ -12,7 +12,7 @@ rule download_models:
         "wget {params.link2} -O {output.model2}"
 
 rule download_DNA_BERT:
-    """ Donwload the BERT tokenizer and the pretrained DNA_BERT parameters 
+    """ Download the BERT tokenizer and the pretrained DNA_BERT parameters 
         from Zenodo (originally from 'zhihan1996/DNA_bert_6' in 
         huggingface)."""
     output:
@@ -30,3 +30,27 @@ rule download_DNA_BERT:
         "tar -xzf temp_dnabert.tar.gz && "
         "mv DNA_BERT_6_pretrained_model/ {output.dnabert} && "
         "rm temp_dnabert.tar.gz temp_tokenizer.tar.gz"
+
+rule create_virtualenv:
+    """ Create the virtual environment in which all rules will be run. No conda 
+        env is created, as the equivalent conda env of this virtualenv hinders 
+        GPU usage. We create a tar archive so that we can copy it on cluster 
+        nodes directly more efficently and then activate that environment on 
+        the node directly."""
+    output:
+        env = "envs/snoBIRD_env.tar.gz"
+    params:
+        cluster = is_sbatch_installed2(),
+        pyenv = config["pyenv"]
+    shell:
+        "if [ {params.cluster} = True ]; then "
+        "module load python; "
+        "fi && "
+        "echo 'Creating snoBIRD_env...' &&"
+        "virtualenv --download snoBIRD_env && "
+        "source snoBIRD_env/bin/activate && "
+        "echo 'Downloading packages in snoBIRD_env...' && "
+        "pip install --quiet -r {params.pyenv} && deactivate && "
+        "echo 'Converting the virtualenv in a tar archive (please be patient)...' && "
+        "tar -czf {output.env} snoBIRD_env"
+#rule create_conda_env:  # conda for local usage
