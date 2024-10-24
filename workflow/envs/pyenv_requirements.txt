@@ -7,3 +7,4 @@ biopython==1.84
 pybedtools==0.10.0
 shap==0.43.0
 viennarna==2.7.0
+torch==2.4.1
