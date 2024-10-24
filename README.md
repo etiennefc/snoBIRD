@@ -41,7 +41,7 @@ git clone https://github.com/etiennefc/snoBIRD.git &&
 cd snoBIRD/
 ```
 
-6 - Finally, download the models and tokenizer that constitute the core of SnoBIRD, as well as create the virtual environment in which SnoBIRD will run:
+6 - Finally, download the models and tokenizer that constitute the core of SnoBIRD, as well as create the environment in which SnoBIRD will run:
 ```bash
 python3 snoBIRD.py --download_model
 ```
@@ -51,7 +51,7 @@ The most basic use of SnoBIRD is as follows, where [-options] are optional flags
 ```bash
 python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa>
 ```
-By default, this command will run **both** the first and second model of SnoBIRD, which will identify in your input sequence C/D box snoRNA genes (first model) and refine these predicted C/D box snoRNA genes by predicting if they are expressed snoRNAs or snoRNA pseudogenes (second model). 
+By default, this command will run **both** the first and second model of SnoBIRD, which will identify in your input sequence C/D box snoRNA genes (first model) and refine these predicted C/D box snoRNA genes by predicting if they are expressed snoRNAs or snoRNA pseudogenes (second model). SnoBIRD also assumes, by default, that it is run on High-Performance Computing (HPC) cluster. 
 
 Your final predictions will be located in the file `workflow/results/final/snoBIRD_complete_predictions.tsv`, a tab-separated file (.tsv) by default.
 
@@ -66,6 +66,10 @@ by SnoBIRD. This goes through the whole pipeline without actually running it and
 summarizes which steps will be executed. 
     ```bash
     python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa> -n
+    ```
+- ***Output***: You can specify which output type you want using the `--output_type` option (default: tsv). The default output format is a tab-separated (.tsv) file containing all predicted snoRNAs and other relevant information (genomic location, box positions, structural feature values, prediction probability, snoRNA sequence, etc.). The other available output formats are FASTA and BED files, which also contain all the aforementioned snoRNA information. In addition, you can also modify the default output file name `snoBIRD_complete_predictions` using the `-o/--output_name` option (no need to provide the file extension in the name, SnoBIRD automatically adds it depending on the chosen `--output_type` option). Of note, the default output file directory (`workflow/results/final/`) cannot be changed, only the file name can.
+    ```bash
+    python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa> --output_type <tsv|fa|bed> -o <your_favorite_file_name>
     ```
 - ***Run First Model Only***: If you want to run only the first model of SnoBIRD, i.e. that you are interested in knowing only if there are C/D box snoRNA genes in your input sequence and therefore you don't want to differentiate these predictions between if they are expressed or snoRNA pseudogenes, you should run the following command:
     ```bash
@@ -86,7 +90,7 @@ python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.f
 ```  
 
 ## Notes 
-While SnoBIRD can technically run on a local computer without any GPU, its architecture (BERT models and parallelization steps) is designed to be run a High-Performance Computing (HPC) cluster using GPUs in order to speed up dramatically its runtime. Therefore, we recommend its use on HPC clusters with GPUs (SnoBIRD assumes by default that it will be run on a HPC cluster). However, you can realistically run SnoBIRD on a local computer if you have a small input FASTA sequence (<1Mb) (or if you have a lot of spare time ahead of you for sequences of greater size). In that case, you should add the -L/--local_profile option to your command so that SnoBIRD works properly on a local computer. When using the -L/--local_profile option, you can also specify the number of CPU cores that you want to provide locally to increase parallelism between SnoBIRD's steps using the -k/--cores option (default: 1)
+While SnoBIRD can technically run on a local computer without any GPU, its architecture (BERT models and parallelization steps) is designed to be run a HPC cluster using GPUs in order to speed up dramatically its runtime. Therefore, we recommend its use on HPC clusters with GPUs (SnoBIRD assumes by default that it will be run on a HPC cluster). However, you can realistically run SnoBIRD on a local computer if you have a small input FASTA sequence (<1Mb) (or if you have a lot of spare time ahead of you for sequences of greater size). In that case, you should add the `-L/--local_profile` option to your command so that SnoBIRD works properly on a local computer. When using the `-L/--local_profile` option, you can also specify the number of CPU cores that you want to provide locally to increase parallelism between SnoBIRD's steps (and therefore decrease runtime) using the `-k/--cores` option (default: 1).
 ```bash
 python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa> -L -k <number_of_cores_to_use>
 ```
