@@ -107,7 +107,7 @@ rule merge_filter_windows:
         "{params.prob_threshold} {params.min_consecutive_windows_threshold} "
         "{params.profile}; else "
         "bash scripts/bash/merge_filter_windows.sh "
-        "{input.params.input_preds} {input.input_fasta_dir} {input.input_fasta} "
+        "{params.input_preds} {input.input_fasta_dir} {input.input_fasta} "
         "{input.pretrained_model} {input.tokenizer} {input.snoBIRD} "
         "{output.filtered_preds} {output.center_preds} {params.fixed_length} "
         "{params.step_size} {params.chunk_size} {params.batch_size} "
