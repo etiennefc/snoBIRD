@@ -41,7 +41,7 @@ git clone https://github.com/etiennefc/snoBIRD.git &&
 cd snoBIRD/
 ```
 
-6 - Finally, download the models and tokenizer that constitute the core of SnoBIRD:
+6 - Finally, download the models and tokenizer that constitute the core of SnoBIRD, as well as create the virtual environment in which SnoBIRD will run:
 ```bash
 python3 snoBIRD.py --download_model
 ```
@@ -86,9 +86,9 @@ python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.f
 ```  
 
 ## Notes 
-While SnoBIRD can technically run on a local computer without any GPU, its architecture (BERT models and parallelization steps) is designed to be run a HPC cluster using GPUs in order to speed up dramatically its runtime. Therefore, we recommend its use on HPC clusters with GPUs. However, you can realistically run SnoBIRD locally if you have a small input FASTA sequence (<1Mb) (or if you have a lot of spare time ahead of you for sequences of greater size). In that case, you should add the -L/--local_profile option to your command so that SnoBIRD works properly on a local computer.
+While SnoBIRD can technically run on a local computer without any GPU, its architecture (BERT models and parallelization steps) is designed to be run a High-Performance Computing (HPC) cluster using GPUs in order to speed up dramatically its runtime. Therefore, we recommend its use on HPC clusters with GPUs (SnoBIRD assumes by default that it will be run on a HPC cluster). However, you can realistically run SnoBIRD on a local computer if you have a small input FASTA sequence (<1Mb) (or if you have a lot of spare time ahead of you for sequences of greater size). In that case, you should add the -L/--local_profile option to your command so that SnoBIRD works properly on a local computer. When using the -L/--local_profile option, you can also specify the number of CPU cores that you want to provide locally to increase parallelism between SnoBIRD's steps using the -k/--cores option (default: 1)
 ```bash
-python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa> -L
+python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.fa> -L -k <number_of_cores_to_use>
 ```
 
 
