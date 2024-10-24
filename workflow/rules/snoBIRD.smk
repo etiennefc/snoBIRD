@@ -71,9 +71,8 @@ rule merge_filter_windows:
         predictions input, the files paths are joined into 1 string so that 
         this variable can then be expanded adequately later in the script."""
     input:
-        predictions = '__PRED_SEP__'.join(
-                        expand(rules.genome_prediction.output.windows, 
-                        chr_=config.get('CHR_'))),
+        predictions = expand(rules.genome_prediction.output.windows, 
+                        chr_=config.get('CHR_')),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta"),
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
@@ -83,6 +82,9 @@ rule merge_filter_windows:
         filtered_preds = 'results/intermediate/predictions/first_model/filtered_positive_windows.bed',
         center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     params:
+        input_preds = '__PRED_SEP__'.join(
+                        expand(rules.genome_prediction.output.windows, 
+                        chr_=config.get('CHR_'))),
         fixed_length = config.get('fixed_length'),
         step_size = config.get("step_size"),
         chunk_size = config.get("chunk_size"),
@@ -97,7 +99,7 @@ rule merge_filter_windows:
     shell:
         "if [ {params.profile} = local ]; then "
         "conda run -p snoBIRD_env/ "
-        "python3 {params.python_script} {input.predictions} "
+        "python3 {params.python_script} {params.input_preds} "
         "{input.input_fasta_dir} {input.input_fasta} {input.pretrained_model} "
         "{input.tokenizer} {input.snoBIRD} {output.filtered_preds} "
         "{output.center_preds} {params.fixed_length} {params.step_size} "
@@ -105,7 +107,7 @@ rule merge_filter_windows:
         "{params.prob_threshold} {params.min_consecutive_windows_threshold} "
         "{params.profile}; else "
         "bash scripts/bash/merge_filter_windows.sh "
-        "{input.predictions} {input.input_fasta_dir} {input.input_fasta} "
+        "{input.params.input_preds} {input.input_fasta_dir} {input.input_fasta} "
         "{input.pretrained_model} {input.tokenizer} {input.snoBIRD} "
         "{output.filtered_preds} {output.center_preds} {params.fixed_length} "
         "{params.step_size} {params.chunk_size} {params.batch_size} "
