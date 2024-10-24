@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import pandas as pd
 import os
+import sys
 import collections as coll
 from pybedtools import BedTool
 import subprocess as sp
@@ -11,32 +12,42 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
 from transformers import AutoTokenizer, BertForSequenceClassification
+import pybedtools
+import warnings
+warnings.filterwarnings("ignore")
 
 # Define inputs, outputs and parameters
-pretrained_model = str(snakemake.input.pretrained_model)
-tokenizer_path = str(snakemake.input.tokenizer)
-all_preds = list(snakemake.input.predictions)
-model_path = str(snakemake.input.snoBIRD)
-input_fasta_dir = str(snakemake.input.input_fasta_dir)
-input_fasta = str(snakemake.input.input_fasta)
+all_preds = str(sys.argv[1])
+all_preds = [path for path in all_preds.split('__PRED_SEP__')]
+input_fasta_dir = str(sys.argv[2])
+input_fasta = str(sys.argv[3])
+pretrained_model = str(sys.argv[4])
+tokenizer_path = str(sys.argv[5])
+model_path = str(sys.argv[6])
 
-output_df = str(snakemake.output.filtered_preds)
-output_df_center = str(snakemake.output.center_preds)
+output_df = str(sys.argv[7])
+output_df_center = str(sys.argv[8])
 
-fixed_length = int(snakemake.params.fixed_length)
-step_size = int(snakemake.params.step_size)
-chunk_size = int(snakemake.params.chunk_size)
-batch_size = int(snakemake.params.batch_size)
-num_labels = int(snakemake.params.num_labels)
-prob_threshold = float(snakemake.params.prob_threshold)
-min_consecutive_windows = int(snakemake.params.min_consecutive_windows_threshold)
+fixed_length = int(sys.argv[9])
+step_size = int(sys.argv[10])
+chunk_size = int(sys.argv[11])
+batch_size = int(sys.argv[12])
+num_labels = int(sys.argv[13])
+prob_threshold = float(sys.argv[14])
+min_consecutive_windows = int(sys.argv[15])
+profile = str(sys.argv[16])
+if profile != 'local':
+    temp_dir = str(sys.argv[17])                            
 
 # Concat all predictions of first SnoBIRD model into 1 df (preds from all 
 # chr and/or chunks)
 """ Apply 1st filter on probability."""
 dfs = []
 for p in all_preds:
-    df = pd.read_csv(p, sep='\t')
+    if profile != 'local':
+        df = pd.read_csv(temp_dir+p, sep='\t')
+    else:
+        df = pd.read_csv(p, sep='\t')
     df = df.rename(columns={'probs': 'probability_first_model'})
     
     df = df[df['probability_first_model'] > prob_threshold]
@@ -148,7 +159,6 @@ for i in range(len(merged_blocks)):
 # Create a DataFrame from the merged rows
 result_df = pd.DataFrame(merged_rows)
 """ Apply 2nd filter: length of merged blocks"""
-#result_df = result_df[(result_df['len'] >= 204) & (result_df['len'] <= 264)]
 result_df = result_df[result_df['len'] >= (
                                     fixed_length + min_consecutive_windows)]
 
@@ -205,21 +215,23 @@ elif step_size > 1:
                 if '>' not in line:
                     preds_seqs.append(line.strip('\n'))
 
-        # Limit the number of threads that torch can spawn with (to avoid core 
-        # oversubscription) i.e. set the num of threads to the number of CPUs 
-        # requested (not all CPUs physically installed)
-        N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
-        torch.set_num_threads(int(N_CPUS))
-
         # Force to parallelize tokenizing to increase SnoBIRD speed
         os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-        # Allow TF32 on matrix multiplication to speed up computations
-        torch.backends.cuda.matmul.allow_tf32 = True
+        # Limit the number of threads that torch can spawn with (to avoid core 
+        # oversubscription) i.e. set the num of threads to the number of CPUs 
+        # requested (not all CPUs physically installed)
+        # Do only on cluster, not in local
+        if profile != 'local':
+            N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
+            torch.set_num_threads(int(N_CPUS))
 
-        # Allow TF32 when using cuDNN library (GPU-related library usually 
-        # automatically installed on the cluster)
-        torch.backends.cudnn.allow_tf32 = True
+            # Allow TF32 on matrix multiplication to speed up computations
+            torch.backends.cuda.matmul.allow_tf32 = True
+
+            # Allow TF32 when using cuDNN library (GPU-related library usually 
+            # automatically installed on the cluster)
+            torch.backends.cudnn.allow_tf32 = True
 
 
         # Show packages versions

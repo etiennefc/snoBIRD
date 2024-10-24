@@ -8,11 +8,18 @@ rule split_chr:
     params:
         chunks = config.get("chunks"),
         chunk_size = config.get("chunk_size"),
-        python_script = 'scripts/python/split_chr.py'
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/split_chr.py"
+        python_script = 'scripts/python/split_chr.py',
+        profile = config.get("profile"),
+        cluster_env = rules.create_env.output.env
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.input_fasta} "
+        "{output.split_chr_dir} {params.chunks} {params.chunk_size}; else "
+        "bash scripts/bash/split_chr.sh {params.python_script} "
+        "{input.input_fasta} {output.split_chr_dir} {params.chunks} "
+        "{params.chunk_size} {params.cluster_env}; "
+        "fi"
 
 rule genome_prediction:
     """ Predict with SnoBIRD's first model C/D box snoRNA genes in the input 
@@ -34,17 +41,25 @@ rule genome_prediction:
         chunk_size = config.get("chunk_size"),
         chr_dict = config.get('CHR_dict'),
         batch_size = config.get("batch_size"),
-        num_labels = config.get('num_labels')
-    #conda:
-    #    "../envs/python_new.yaml"
+        num_labels = config.get('num_labels'),
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
     shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.snoBIRD} "
+        "{input.genome_dir}/fasta/{wildcards.chr_}.fa "
+        "{input.pretrained_model} {input.tokenizer} {output.windows} "
+        "{params.fixed_length} {params.step_size} {params.strand} "
+        "{params.batch_size} {params.num_labels} {params.profile}; else "
         "bash scripts/bash/genome_prediction.sh "
         "{input.snoBIRD} {input.genome_dir}/fasta/{wildcards.chr_}.fa "
         "{input.pretrained_model} {input.tokenizer} "
         "{output.windows} "
         "{params.fixed_length} {params.step_size} "
-        "{params.strand} {params.python_script} "
-        "{params.batch_size} {params.num_labels}"
+        "{params.strand} {params.python_script} {params.batch_size} "
+        "{params.num_labels} {params.cluster_env} {params.profile}; "
+        "fi"
 
 rule merge_filter_windows:
     """ From the positive windows predicted by the first model of SnoBIRD, 
@@ -52,10 +67,13 @@ rule merge_filter_windows:
         the windows by score and consecutive blocks of nt and merge afterwards 
         into one block per prediction (and one center window surrounding the 
         snoRNA). Predict, if step_size>1, if the center window is also 
-        predicted as a C/D to filter out even more predictions."""
+        predicted as a C/D to filter out even more predictions. For the 
+        predictions input, the files paths are joined into 1 string so that 
+        this variable can then be expanded adequately later in the script."""
     input:
-        predictions = expand(rules.genome_prediction.output.windows, 
-                            chr_=config.get('CHR_')),
+        predictions = '__PRED_SEP__'.join(
+                        expand(rules.genome_prediction.output.windows, 
+                        chr_=config.get('CHR_'))),
         input_fasta_dir = rules.split_chr.output.split_chr_dir,
         input_fasta = config.get("input_fasta"),
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
@@ -73,11 +91,28 @@ rule merge_filter_windows:
         num_labels = config.get('num_labels'),
         prob_threshold = config.get("min_probability_threshold_first_model"),
         min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold"),
-        python_script = "scripts/python/merge_filter_windows.py"
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/merge_filter_windows.py"
+        python_script = "scripts/python/merge_filter_windows.py",
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.predictions} "
+        "{input.input_fasta_dir} {input.input_fasta} {input.pretrained_model} "
+        "{input.tokenizer} {input.snoBIRD} {output.filtered_preds} "
+        "{output.center_preds} {params.fixed_length} {params.step_size} "
+        "{params.chunk_size} {params.batch_size} {params.num_labels} "
+        "{params.prob_threshold} {params.min_consecutive_windows_threshold} "
+        "{params.profile}; else "
+        "bash scripts/bash/merge_filter_windows.sh "
+        "{input.predictions} {input.input_fasta_dir} {input.input_fasta} "
+        "{input.pretrained_model} {input.tokenizer} {input.snoBIRD} "
+        "{output.filtered_preds} {output.center_preds} {params.fixed_length} "
+        "{params.step_size} {params.chunk_size} {params.batch_size} "
+        "{params.num_labels} {params.prob_threshold} "
+        "{params.min_consecutive_windows_threshold} {params.python_script} "
+        "{params.cluster_env} {params.profile}; "
+        "fi"
 
 rule shap_snoBIRD:
     """ Compute SHAP values for each predicted C/D snoRNA. This is needed to 
@@ -97,17 +132,23 @@ rule shap_snoBIRD:
         python_script = 'scripts/python/shap_snoBIRD.py',
         gpu = config.get('gpu_generation'),
         batch_size = config.get("batch_size"),
-        num_labels = config.get('num_labels')
-    #conda:
-    #    "../envs/python_new.yaml"
-    #script:
-    #    "../scripts/python/shap_snoBIRD.py"
+        num_labels = config.get('num_labels'),
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
     shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.snoBIRD} {input.preds} "
+        "{input.pretrained_model} {input.tokenizer} {output.shap_df} "
+        "{params.fixed_length} {params.batch_size} {params.num_labels} "
+        "{params.profile}; else "
         "bash scripts/bash/shap_snoBIRD.sh "
         "{input.snoBIRD} {input.preds} "
-        "{input.pretrained_model} {input.tokenizer} "
+        "{input.pretrained_model} {input.tokenizer} {output.shap_df} "
         "{params.fixed_length} {params.python_script} "
-        "{output.shap_df} {params.batch_size} {params.num_labels}"
+        "{params.batch_size} {params.num_labels} {params.cluster_env} "
+        "{params.profile}; "
+        "fi"
 
 rule find_sno_limits_shap_minimal:
     """ Run this rule if the user wants to run ONLY the first SnoBIRD model 
@@ -124,12 +165,23 @@ rule find_sno_limits_shap_minimal:
     params:
         output_type = config.get("output_type"),
         fixed_length = config.get("fixed_length"),
+        python_script = "scripts/python/find_sno_limits_shap_minimal.py",
         min_box_dist = config.get("min_box_dist"),
-        flanking_nt = config.get("flanking_nt")
-    conda:
-        "../envs/python_gpu.yaml"
-    script:
-        "../scripts/python/find_sno_limits_shap_minimal.py"
+        flanking_nt = config.get("flanking_nt"),
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.shap_df} {input.preds} "
+        "{output.minimal_output} {params.output_type} {params.fixed_length} "
+        "{params.min_box_dist} {params.flanking_nt}; else "
+        "bash scripts/bash/find_sno_limits_shap_minimal.sh "
+        "{input.shap_df} {input.preds} "
+        "{output.minimal_output} {params.output_type} {params.fixed_length} "
+        "{params.python_script} {params.min_box_dist} {params.flanking_nt} "
+        "{params.cluster_env}; "
+        "fi"
 
 rule find_sno_limits_shap:
     """ Based on the SHAP values, find the C and/or the D box to delimit the 
@@ -143,11 +195,22 @@ rule find_sno_limits_shap:
     params:
         fixed_length = config.get("fixed_length"),
         min_box_dist = config.get("min_box_dist"),
-        flanking_nt = config.get("flanking_nt")
-    conda:
-        "../envs/python_new.yaml"
-    script:
-        "../scripts/python/find_sno_limits_shap.py"
+        flanking_nt = config.get("flanking_nt"),
+        python_script = "scripts/python/find_sno_limits_shap.py",
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.shap_df} {input.preds} "
+        "{output.df} {params.fixed_length} "
+        "{params.min_box_dist} {params.flanking_nt}; else "
+        "bash scripts/bash/find_sno_limits_shap.sh "
+        "{input.shap_df} {input.preds} "
+        "{output.df} {params.fixed_length} "
+        "{params.python_script} {params.min_box_dist} {params.flanking_nt} "
+        "{params.cluster_env}; "
+        "fi"
 
 rule sno_pseudo_prediction:
     """ Predict with SnoBIRD's second model if the C/D box snoRNA genes 
@@ -164,16 +227,23 @@ rule sno_pseudo_prediction:
         python_script = 'scripts/python/sno_pseudo_prediction.py',
         gpu = config.get('gpu_generation'),
         batch_size = config.get("batch_size"),
-        num_labels = config.get('num_labels')
-    #conda:
-    #    "../envs/python_new.yaml"
+        num_labels = config.get('num_labels'),
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
     shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.snoBIRD} "
+        "{input.pretrained_model} {input.tokenizer} {input.preds} "
+        "{output.windows} {params.fixed_length} "
+        "{params.batch_size} {params.num_labels} {params.profile}; else "
         "bash scripts/bash/sno_pseudo_prediction.sh "
-        "{input.pretrained_model} {input.tokenizer} "
-        "{input.preds} {input.snoBIRD} "
-        "{output.windows} "
+        "{input.snoBIRD} {input.pretrained_model} {input.tokenizer} "
+        "{input.preds} {output.windows} "
         "{params.fixed_length} {params.python_script} "
-        "{params.batch_size} {params.num_labels}"
+        "{params.batch_size} {params.num_labels} "
+        "{params.cluster_env} {params.profile}; "
+        "fi"
 
 rule filter_sno_pseudo_predictions_with_features:
     """ Compute the snoRNA normalized structure stability as well as its 
@@ -188,13 +258,31 @@ rule filter_sno_pseudo_predictions_with_features:
     params:
         output_type = config.get("output_type"),
         fixed_length = config.get("fixed_length"),
+        python_script = "scripts/python/filter_sno_pseudo_predictions_with_features.py",
         prob_second_model = config.get('min_probability_threshold_second_model'),
         box_score_thresh = config.get("box_score_threshold"),
         score_c_thresh = config.get("score_c_threshold"),
         score_d_thresh = config.get("score_d_threshold"),
         terminal_stem_score_thresh = config.get("terminal_stem_score_threshold"),
-        normalized_sno_stability_thresh = config.get("normalized_sno_stability_threshold")
-    conda:
-        "../envs/python_gpu.yaml"
-    script:
-        "../scripts/python/filter_sno_pseudo_predictions_with_features.py"
+        normalized_sno_stability_thresh = config.get("normalized_sno_stability_threshold"),
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile")
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.sno_limits} "
+        "{input.sno_pseudo_preds} {output.final_output} "
+        "{params.output_type} {params.fixed_length} "
+        "{params.prob_second_model} {params.box_score_thresh} "
+        "{params.score_c_thresh} {params.score_d_thresh} "
+        "{params.terminal_stem_score_thresh} "
+        "{params.normalized_sno_stability_thresh}; else "
+        "bash scripts/bash/filter_sno_pseudo_predictions_with_features.sh "
+        "{input.sno_limits} {input.sno_pseudo_preds} "
+        "{output.final_output} {params.output_type} {params.fixed_length} "
+        "{params.python_script} {params.prob_second_model} "
+        "{params.box_score_thresh} {params.score_c_thresh} "
+        "{params.score_d_thresh} {params.terminal_stem_score_thresh} "
+        "{params.normalized_sno_stability_thresh} {params.cluster_env}; "
+        "fi"
+        

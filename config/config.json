@@ -4,7 +4,8 @@
   "num_labels": 2,
   "min_box_dist": 15,
   "flanking_nt": 20,
-  "pyenv": "envs/pyenv_requirements.txt",
+  "virtualenv": "envs/pyenv_requirements.txt",
+  "condaenv": "envs/conda_python.yaml",
   "download":
   {
     "first_model": "https://zenodo.org/records/13375669/files/snoBIRD_first_model.pt",

@@ -6,12 +6,12 @@ import os
 
 def find_download(dir_="workflow/data/references/", quiet=False):
     "Find if SnoBIRD models have already been downloaded."
-    model_download = "will be been downloaded!"
+    model_download = "will be downloaded!"
     model_download_bool = False
     if (os.path.exists(dir_+'models')) & (
         os.path.exists(dir_+'DNA_BERT_6_tokenizer')) & (
             os.path.exists(dir_+'DNA_BERT_6_pretrained_model') & (
-                os.path.exists('workflow/snoBIRD_env.tar.gz'))
+                os.path.exists('workflow/envs/snoBIRD_env.tar.gz'))
         ):
         potential_downloads_model = os.listdir(dir_+'models')
         potential_downloads_bert = os.listdir(
@@ -105,6 +105,16 @@ def main(no_arg=False):
             "option is thus disabled by default, unless you use the -n and/or"+
             " -d options (which will run locally a dryrun or download_model, "+
             "respectively).")
+    optional_group.add_argument('--cores', '-k', type=int, 
+        help="Number of CPU cores to provide for parallelizing SnoBIRD's "+
+            "steps across different cores (default: 1). WARNING: this "+
+            "option only has an effect when SnoBIRD is run locally on "+
+            "your computer (-L option), i.e. not on a HPC cluster. Although "+
+            "the number of asked CPU and GPU cores is already optimized when "+
+            "SnoBIRD runs on a HPC cluster, if you really want to override "+
+            "these values for SnoBIRD's different steps on a HPC cluster, you "+
+            "can modify them manually in the file "+
+            "workflow/profile_slurm/cluster.yaml", default=1)
     optional_group.add_argument('--gpu_generation', '-G', type=str, 
         choices=['H100', 'A100', 'V100', 'P100', 'Unknown'], 
         help='GPU generation (from NVIDIA) that will be used to run SnoBIRD '+
@@ -112,9 +122,9 @@ def main(no_arg=False):
         'step will take longer to start running, as the same generic longer '+
         'time will be asked for SnoBIRD to run on each chr/chunks; one can '+
         'change this generic longer time by changing the time keyword in the '+
-        'genome_prediction entry in the file profile_slurm/cluster.yaml. To '+
-        'find which GPU generations are available on your SLURM cluster, use '+
-        'the command '+
+        'genome_prediction entry in the file '+
+        'workflow/profile_slurm/cluster.yaml. To find which GPU generations '+
+        'are available on your SLURM cluster, use the command '+
         'sinfo -o "%%N %%G" | grep "[pPaAvVhH]100"', default="A100")
     optional_group.add_argument('--first_model_only', '-f', action='store_true', 
         help="Run only the first SnoBIRD model and not the second (i.e. "+
@@ -214,8 +224,6 @@ def main(no_arg=False):
              
     
 
-    #parser.add_argument('--run_rule', type=str, help="Rule to run")
-    #parser.add_argument('--cores', type=int, help="Number of cores")
     
     args = parser.parse_args()
 
@@ -233,6 +241,7 @@ def main(no_arg=False):
         exit()
 
     # Verify if custom arg is in the right value range
+    arg_value_range(args.cores, "cores")
     arg_value_range(args.chunk_size, "chunk_size")
     arg_value_range(args.step_size, "step_size")
     arg_value_range(args.batch_size, "batch_size")
@@ -266,22 +275,26 @@ def main(no_arg=False):
             snakemake_cmd += "all_downloads " + profile_local
             config_l += "input_fasta=fake_input "
             config_l += "download_model=True "
+            config_l += "profile=local "
             find_download()
         else:
             parser.error('An input fasta file is required. '+
-                        'Please use --i <input_fasta.fa>')
+                        'Please use -i <input_fasta.fa>')
 
 
     # Define optional args effects
 
     ## Add custom parameters to the Snakemake command
     if args.local_profile:
-        snakemake_cmd = "cd workflow && snakemake " + profile_local
+        snakemake_cmd = "cd workflow && snakemake " + profile_local +\
+                        f"--cores {args.cores} "
+        config_l += "profile=local "
         
     if args.input_fasta:
         if args.download_model:
             snakemake_cmd = "cd workflow && snakemake "
             snakemake_cmd += "all_downloads " + profile_local
+            config_l += "profile=local "
             find_download()
     if args.dryrun:
         snakemake_cmd = "cd workflow && snakemake "+ profile_local
@@ -362,10 +375,13 @@ def main(no_arg=False):
     if (args.download_model == False) & (args.unlock == False) & (
         args.dryrun == False):
         no_return_var = ['help', 'version', 'download_model', 'dryrun', 
-                        'unlock']
-        if args.first_model_only:
+                        'unlock']  # args that are not reproducibility-related
+        if args.first_model_only:  # don't return args w/r to 2nd model
             no_return_var.extend(['prob_second_model', 'box_score', 'score_c', 
                 'score_d', 'terminal_stem_score', 'normalized_sno_stability'])
+
+        if not args.local_profile:  # don't return 'cores' arg if cluster usage
+            no_return_var.append('cores')
 
         cmd_line = "python3 snoBIRD.py "
         dict_var = vars(args)
@@ -395,6 +411,13 @@ if __name__ == "__main__":
                     'snoBIRD_usage.log', shell=True)
             sp.call('echo "##[Used packages versions]:" >> snoBIRD_usage.log', 
                                                                     shell=True)
-            sp.call(f'pip list >> snoBIRD_usage.log', shell=True)
+            if is_sbatch_installed():
+                sp.call(
+                    'workflow/snoBIRD_env/bin/pip list >> snoBIRD_usage.log', 
+                    shell=True)
+            else:
+                sp.call(
+                    'conda list -p workflow/snoBIRD_env/ >> snoBIRD_usage.log', 
+                    shell=True)
             sp.call('echo "\n\n" >> snoBIRD_usage.log', shell=True)
         

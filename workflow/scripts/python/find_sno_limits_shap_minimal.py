@@ -5,15 +5,19 @@ import re
 import regex
 import numpy as np
 import utils as ut
+import sys
+import subprocess as sp
+import warnings
+warnings.filterwarnings("ignore")
 
 # Load df and variables
 len_c_box, len_d_box = 7, 4
-fixed_length = int(snakemake.params.fixed_length)
-output_type = str(snakemake.params.output_type)
-preds = pd.read_csv(snakemake.input.preds, sep='\t', names=
+fixed_length = int(sys.argv[5])
+output_type = str(sys.argv[4])
+preds = pd.read_csv(str(sys.argv[2]), sep='\t', names=
         ['chr_window', 'start_window', 'end_window', 'gene_id', 'score', 
         'strand_window', 'block_name', f'extended_{fixed_length}nt_sequence'])
-shap_df = pd.read_csv(snakemake.input.shap_df, sep='\t').rename(
+shap_df = pd.read_csv(str(sys.argv[1]), sep='\t').rename(
                     columns={'probability': 'probability_CD'})
 shap_df = shap_df[shap_df['predicted_label'] != 'Other']
 
@@ -28,11 +32,11 @@ shap_cols = [i for i in shap_df.columns if i.startswith('SHAP_')]
 # a C/D snoRNA in human). To not miss any snoRNA, we define the minimal length 
 # to find the C or D box to be +-15 nt from the center of the predicted window 
 # as it is in this snoRNA
-min_box_dist = snakemake.params.min_box_dist  # default: 15
+min_box_dist = int(sys.argv[6])  # default: 15
 # Flanking nt extending after the snoRNA start/end are minimally of 15 nt, so 
 # no C or D box should be found in the first and last 20 nt of the window 
 # (15 nt + 5 nt within the snoRNA to reach C_start or D_end)
-flanking_nt = snakemake.params.flanking_nt  # default: 20
+flanking_nt = int(sys.argv[7])  # default: 20
 
 # Thus, the ranges in which a C and D boxes can be searched are defined below
 ## + 1 to account for the [CLS] ##
@@ -78,7 +82,7 @@ df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 df_final = df_final.sort_values(by=['chr', 'strand', 'start'])
 
 if output_type == 'tsv':
-    df_final.to_csv(snakemake.output.minimal_output, sep='\t', index=False)
+    df_final.to_csv(str(sys.argv[3]), sep='\t', index=False)
 elif output_type == 'bed':
     df_final['empty_score'] = '.'
     bed_cols = ['chr', 'start', 'end', 'gene_id', 'empty_score', 'strand', 
@@ -93,10 +97,10 @@ elif output_type == 'bed':
                         [f"{col}={row[col]}" for col in col_names]), axis=1)
 
     df_final['attributes'] = create_attributes(df_final, att_cols)
-    df_final[bed_cols].to_csv(snakemake.output.minimal_output, sep='\t', 
+    df_final[bed_cols].to_csv(str(sys.argv[3]), sep='\t', 
                                 index=False, header=False)
 elif output_type == 'fa':
-    with open(snakemake.output.minimal_output, 'w') as f:
+    with open(str(sys.argv[3]), 'w') as f:
         for row in df_final.iterrows():
             gene_id = row[1]['gene_id']
             chr_ = row[1]['chr']
@@ -126,5 +130,5 @@ elif output_type == 'fa':
                     f'\n{sequence}\n')
             
 
-
+sp.call('''echo "SnoBIRD's run is fully completed!"''', shell=True)
 

@@ -9,34 +9,37 @@ import numpy as np
 import subprocess as sp
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
-from transformers import AutoTokenizer, BertForSequenceClassification, logging
+from transformers import AutoTokenizer, BertForSequenceClassification
 from utils import seq2kmer
-#logging.set_verbosity_error()
+import warnings
+warnings.filterwarnings("ignore")
 
 # Load inputs, params and output
-pretrained_model = str(sys.argv[1])
-tokenizer_path = str(sys.argv[2])  
-model_path = str(sys.argv[4])
-fixed_length = int(sys.argv[5])
-df_preds = sys.argv[6]
+model_path = str(sys.argv[1])
+pretrained_model = str(sys.argv[2])
+tokenizer_path = str(sys.argv[3])  
+df_preds = str(sys.argv[5])
+fixed_length = int(sys.argv[6])
 batch_size = int(sys.argv[7])
 num_labels = int(sys.argv[8])
+profile = str(sys.argv[9])
 
-# Limit the number of threads that torch can spawn with (to avoid core 
-# oversubscription) i.e. set the number of threads to the number of CPUs 
-# requested (not all CPUs physically installed)
-N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
-torch.set_num_threads(int(N_CPUS))
 
-# Force to parallelize tokenizing to increase SnoBIRD speed
+# Force to not parallelize tokenizing before dataloader (causes forking errors otherwise)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-# Allow TF32 on matrix multiplication to speed up computations
-torch.backends.cuda.matmul.allow_tf32 = True
+# Limit the number of threads that torch can spawn with (to avoid core oversubscription)
+# i.e. set the number of threads to the number of CPUs requested (not all CPUs physically installed)
+# Do only on cluster, not in local
+if profile != 'local':
+    N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
+    torch.set_num_threads(int(N_CPUS))
 
-# Allow TF32 when using cuDNN library (GPU-related library usually 
-# automatically installed on the cluster)
-torch.backends.cudnn.allow_tf32 = True
+    # Allow TF32 on matrix multiplication to speed up computations
+    torch.backends.cuda.matmul.allow_tf32 = True
+    
+    # Allow TF32 when using cuDNN library (GPU-related library usually automatically installed on the cluster)
+    torch.backends.cudnn.allow_tf32 = True
 
 
 # Show packages versions
@@ -53,7 +56,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Load predicted C/D by first SnoBIRD model and transform in kmers (6-mers)
-first_preds_df = pd.read_csv(sys.argv[3], sep='\t', names=['chr', 'start', 
+first_preds_df = pd.read_csv(str(sys.argv[4]), sep='\t', names=['chr', 'start', 
                     'end', 'gene_id', 'probability_CD', 'strand', 'block_id', 
                     f'extended_{fixed_length}nt_sequence'])
 preds_seqs = list(first_preds_df[f'extended_{fixed_length}nt_sequence'])

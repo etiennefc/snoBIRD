@@ -3,12 +3,21 @@ import numpy
 from Bio import SeqIO
 import os
 import subprocess as sp
+import sys
+import warnings
+warnings.filterwarnings("ignore")
 
 # Load variables
-chunks = snakemake.params.chunks
-chunk_size = snakemake.params.chunk_size
-input_ = snakemake.input.input_fasta
-out_ = snakemake.output.split_chr_dir
+input_ = str(sys.argv[1])
+out_ = str(sys.argv[2])
+chunks = sys.argv[3]
+if chunks == 'None':
+    chunks = None
+elif chunks == 'True':
+    chunks = True
+chunk_size = sys.argv[4]
+if chunk_size != 'None':
+    chunk_size = int(sys.argv[4])
 
 
 def multi_fasta(input_fasta, output_dir):
@@ -112,8 +121,9 @@ if __name__ == "__main__":
             for fa in records:
                 split_and_overlap(f"{fasta_dir}/{fa}", max_size=chunk_size)
         else:  # only 1 chr in initial fasta, but might be splittable in chunks
-            sp.call(f"mkdir -p {out_}/fasta && cp {input_} {out_}/fasta/", 
-                    shell=True)
+            entry = SeqIO.read(input_, "fasta").id
+            sp.call(f"mkdir -p {out_}/fasta && cp {input_} "+
+                    f"{out_}/fasta/{entry}.fa", shell=True)
             fa_ = os.listdir(f"{out_}/fasta/")[0]
             split_and_overlap(f"{out_}/fasta/{fa_}", max_size=chunk_size)
 

@@ -5,14 +5,17 @@ import re
 import regex
 import numpy as np
 import utils as ut
+import sys
+import warnings
+warnings.filterwarnings("ignore")
 
 # Load df and variables
 len_c_box, len_d_box = 7, 4
-fixed_length = snakemake.params.fixed_length
-preds = pd.read_csv(snakemake.input.preds, sep='\t', names=
+fixed_length = int(sys.argv[4])
+preds = pd.read_csv(str(sys.argv[2]), sep='\t', names=
         ['chr_window', 'start_window', 'end_window', 'gene_id', 'score', 
         'strand_window', 'block_name', f'extended_{fixed_length}nt_sequence'])
-shap_df = pd.read_csv(snakemake.input.shap_df, sep='\t').rename(
+shap_df = pd.read_csv(str(sys.argv[1]), sep='\t').rename(
                     columns={'probability': 'probability_CD'})
 shap_df = shap_df[shap_df['predicted_label'] != 'Other']
 
@@ -27,11 +30,11 @@ shap_cols = [i for i in shap_df.columns if i.startswith('SHAP_')]
 # a C/D snoRNA in human). To not miss any snoRNA, we define the minimal length 
 # to find the C or D box to be +-15 nt from the center of the predicted window 
 # as it is in this snoRNA
-min_box_dist = snakemake.params.min_box_dist  # default: 15
+min_box_dist = int(sys.argv[5])  # default: 15
 # Flanking nt extending after the snoRNA start/end are minimally of 15 nt, so 
 # no C or D box should be found in the first and last 20 nt of the window 
 # (15 nt + 5 nt within the snoRNA to reach C_start or D_end)
-flanking_nt = snakemake.params.flanking_nt  # default: 20
+flanking_nt = int(sys.argv[6])  # default: 20
 
 # Thus, the ranges in which a C and D boxes can be searched are defined below
 ## + 1 to account for the [CLS] ##
@@ -77,5 +80,5 @@ final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 'probability_CD',
         'predicted_sequence', 'predicted_extended_sequence', 
         f'extended_{fixed_length}nt_sequence']
 df = df.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
-df[final_cols].to_csv(snakemake.output.df, sep='\t', index=False)
+df[final_cols].to_csv(str(sys.argv[3]), sep='\t', index=False)
 

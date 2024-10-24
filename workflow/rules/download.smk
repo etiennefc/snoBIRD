@@ -31,26 +31,31 @@ rule download_DNA_BERT:
         "mv DNA_BERT_6_pretrained_model/ {output.dnabert} && "
         "rm temp_dnabert.tar.gz temp_tokenizer.tar.gz"
 
-rule create_virtualenv:
-    """ Create the virtual environment in which all rules will be run. No conda 
-        env is created, as the equivalent conda env of this virtualenv hinders 
-        GPU usage. We create a tar archive so that we can copy it on cluster 
-        nodes directly more efficently and then activate that environment on 
-        the node directly."""
+rule create_env:
+    """ Create the environment in which all rules will be run. A conda env is 
+        created if SnoBIRD is run locally. If SnoBIRD is run on a cluster, a 
+        virtualenv (with pip) is instead created, as the equivalent conda env 
+        of this virtualenv hinders GPU usage. We create a tar archive so that 
+        we can copy it on cluster nodes directly more efficently and then 
+        activate that environment on the node directly."""
     output:
         env = "envs/snoBIRD_env.tar.gz"
     params:
         cluster = is_sbatch_installed2(),
-        pyenv = config["pyenv"]
+        virtualenv = config["virtualenv"],
+        condaenv = config["condaenv"]
     shell:
         "if [ {params.cluster} = True ]; then "
-        "module load python; "
-        "fi && "
+        "module load python "
         "echo 'Creating snoBIRD_env...' &&"
         "virtualenv --download snoBIRD_env && "
         "source snoBIRD_env/bin/activate && "
         "echo 'Downloading packages in snoBIRD_env...' && "
-        "pip install --quiet -r {params.pyenv} && deactivate && "
+        "pip install --quiet -r {params.virtualenv} && deactivate && "
         "echo 'Converting the virtualenv in a tar archive (please be patient)...' && "
-        "tar -czf {output.env} snoBIRD_env"
+        "tar -czf {output.env} snoBIRD_env; else "
+        "echo 'Creating snoBIRD_env and downloading packages in it...' && "
+        "mamba env create -q -f {params.condaenv} -p snoBIRD_env && "
+        "touch {output.env}; "
+        "fi"
 #rule create_conda_env:  # conda for local usage

@@ -10,9 +10,10 @@ import time
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
-from transformers import AutoTokenizer, BertForSequenceClassification, logging
+from transformers import AutoTokenizer, BertForSequenceClassification
 from utils import seq2kmer
-#logging.set_verbosity_error()
+import warnings
+warnings.filterwarnings("ignore")
 
 model_path = str(sys.argv[1])
 genome = str(sys.argv[2])
@@ -24,6 +25,7 @@ step_size_defined = int(sys.argv[7])
 strand = str(sys.argv[8])
 batch_size = int(sys.argv[9])
 num_labels = int(sys.argv[10])
+profile = str(sys.argv[11])
 output = str(sys.argv[5])
 
 sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {tokenizer_path} {window_size} {step_size_defined} {strand} {output}', shell=True)
@@ -31,19 +33,21 @@ sp.call(f'echo {model_path} {genome} {chr_name} {pretrained_model} {tokenizer_pa
 # Define if we use GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Limit the number of threads that torch can spawn with (to avoid core oversubscription)
-# i.e. set the number of threads to the number of CPUs requested (not all CPUs physically installed)
-N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
-torch.set_num_threads(int(N_CPUS))
-
 # Force to not parallelize tokenizing before dataloader (causes forking errors otherwise)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-# Allow TF32 on matrix multiplication to speed up computations
-torch.backends.cuda.matmul.allow_tf32 = True
-
-# Allow TF32 when using cuDNN library (GPU-related library usually automatically installed on the cluster)
-torch.backends.cudnn.allow_tf32 = True
+# Limit the number of threads that torch can spawn with (to avoid core oversubscription)
+# i.e. set the number of threads to the number of CPUs requested (not all CPUs physically installed)
+# Do only on cluster, not in local
+if profile != 'local':
+    N_CPUS = os.environ.get("SLURM_CPUS_PER_TASK")
+    torch.set_num_threads(int(N_CPUS))
+    
+    # Allow TF32 on matrix multiplication to speed up computations
+    torch.backends.cuda.matmul.allow_tf32 = True
+    
+    # Allow TF32 when using cuDNN library (GPU-related library usually automatically installed on the cluster)
+    torch.backends.cudnn.allow_tf32 = True
 
 
 # Show packages versions
@@ -62,7 +66,7 @@ model.to(device, non_blocking=True)
 model.classifier.to(device, non_blocking=True)
 model.eval()
 end_time = time.time()
-sp.call(f'echo LOAD INITIAL MODEL: {end_time-start_time}', shell=True)
+sp.call(f'echo LOAD INITIAL MODEL: {end_time-start_time}s', shell=True)
 
 
 if strand == 'positive':

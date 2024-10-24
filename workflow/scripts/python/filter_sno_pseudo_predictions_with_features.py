@@ -10,21 +10,22 @@ from math import ceil
 import utils as ut
 
 # Load dfs, params and define output
-sno_df = pd.read_csv(snakemake.input.sno_limits, sep='\t')
+sno_df = pd.read_csv(str(sys.argv[1]), sep='\t')
 sno_df = sno_df.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
-second_model_preds = pd.read_csv(snakemake.input.sno_pseudo_preds, sep='\t', 
+second_model_preds = pd.read_csv(str(sys.argv[2]), sep='\t', 
                     names=['chr_window', 'start_window', 'end_window', 
                     'gene_id', 'block_id', 'probability_expressed_pseudogene', 
                     'second_model_prediction'], header=0)
-terminal_combined_thresh = float(snakemake.params.terminal_stem_score_thresh)
-sno_mfe_thresh = float(snakemake.params.normalized_sno_stability_thresh)
-box_score_thresh = int(snakemake.params.box_score_thresh)
-score_c_thresh = int(snakemake.params.score_c_thresh)
-score_d_thresh = int(snakemake.params.score_d_thresh)
-prob_sno_pseudo_thresh = float(snakemake.params.prob_second_model)
-output_ = snakemake.output.final_output
-output_type = snakemake.params.output_type
-fixed_length = int(snakemake.params.fixed_length)
+output_ = str(sys.argv[3])
+output_type = str(sys.argv[4])
+fixed_length = int(sys.argv[5])
+prob_sno_pseudo_thresh = float(sys.argv[6])
+box_score_thresh = int(sys.argv[7])
+score_c_thresh = int(sys.argv[8])
+score_d_thresh = int(sys.argv[9])
+terminal_combined_thresh = float(sys.argv[10])
+sno_mfe_thresh = float(sys.argv[11])
+
 
 # Compute snoRNA length, normalized structure stability and 
 # terminal stem combined score
@@ -137,4 +138,4 @@ elif output_type == 'fa':
                     f'normalized_sno_stability={norm_mfe} '+
                     f'predicted_label={pred_label}\n{sequence}\n')
 
-
+sp.call('''echo "SnoBIRD's run is fully completed!"''', shell=True)
