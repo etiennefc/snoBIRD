@@ -45,11 +45,9 @@ def fasta_iter(input_fasta):
 def validate_fasta(input_fasta, valid_ext=('.fasta', '.fa')):
     ''' Validate fasta file name, name of entries and file format.'''
     # Check file extension
-    if not input_fasta.lower().endswith(valid_ext):
+    if not input_fasta.endswith(valid_ext):
         raise ValueError("Invalid file extension for input fasta. "+
                 f"Expected one of {valid_ext}.")
-    if input_fasta.lower().endswith('.fasta'):  # change .fasta for .fa
-        sp.call(f'mv {input_fasta} {input_fasta[:-6]}.fa', shell=True)
 
 
 

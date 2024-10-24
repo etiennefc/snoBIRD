@@ -17,7 +17,8 @@ warnings.filterwarnings("ignore")
 
 model_path = str(sys.argv[1])
 genome = str(sys.argv[2])
-chr_name = genome.split('/')[-1].replace('.fa', '')
+chr_name = genome.split('/')[-1].replace('.fasta', '').replace(
+            '.fa', '').replace('.FASTA', '').replace('.FA', '')
 pretrained_model = str(sys.argv[3])
 tokenizer_path = str(sys.argv[4])
 window_size = int(sys.argv[6])
