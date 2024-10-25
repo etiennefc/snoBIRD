@@ -11,6 +11,7 @@
     "first_model": "https://zenodo.org/records/13375669/files/snoBIRD_first_model.pt",
     "second_model": "https://zenodo.org/records/13375669/files/snoBIRD_second_model.pt",
     "DNA_bert_6_tokenizer": "https://zenodo.org/records/13375669/files/DNA_BERT_6_tokenizer.tar.gz",
-    "DNA_bert_6_pretrained_model": "https://zenodo.org/records/13375669/files/DNA_BERT_6_pretrained_model.tar.gz"
+    "DNA_bert_6_pretrained_model": "https://zenodo.org/records/13375669/files/DNA_BERT_6_pretrained_model.tar.gz",
+    "bedtool": "https://github.com/arq5x/bedtools2/releases/download/v2.31.0/bedtools.static"
   }
 }

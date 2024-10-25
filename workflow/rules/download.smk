@@ -37,12 +37,14 @@ rule create_env:
         virtualenv (with pip) is instead created, as the equivalent conda env 
         of this virtualenv hinders GPU usage. We create a tar archive so that 
         we can copy it on cluster nodes directly more efficently and then 
-        activate that environment on the node directly."""
+        activate that environment on the node directly (which is overall more 
+        efficient)."""
     output:
         env = "envs/snoBIRD_env.tar.gz"
     params:
         cluster = is_sbatch_installed2(),
         virtualenv = config["virtualenv"],
+        bedtool_link = config["download"]["bedtool"],
         condaenv = config["condaenv"]
     shell:
         "if [ {params.cluster} = True ]; then "
@@ -51,11 +53,15 @@ rule create_env:
         "virtualenv --download snoBIRD_env && "
         "source snoBIRD_env/bin/activate && "
         "echo 'Downloading packages in snoBIRD_env...' && "
-        "pip install --quiet -r {params.virtualenv} && deactivate && "
+        "pip install --quiet -r {params.virtualenv} && "
+        "wget {params.bedtool_link} && "
+        "mv bedtools.static snoBIRD_env/bin/bedtools && "
+        "chmod a+x snoBIRD_env/bin/bedtools && "
+        "deactivate && "
         "echo 'Converting the virtualenv in a tar archive (please be patient)...' && "
-        "tar -czf {output.env} snoBIRD_env; else "
+        "tar -czf {output.env} snoBIRD_env && "
+        "echo 'Environment creation is complete!'; else "
         "echo 'Creating snoBIRD_env and downloading packages in it...' && "
         "mamba env create -q -f {params.condaenv} -p snoBIRD_env && "
-        "touch {output.env}; "
+        "touch {output.env} && echo 'Environment creation is complete!'; "
         "fi"
-#rule create_conda_env:  # conda for local usage
