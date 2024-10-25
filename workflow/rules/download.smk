@@ -48,7 +48,7 @@ rule create_env:
         condaenv = config["condaenv"]
     shell:
         "if [ {params.cluster} = True ]; then "
-        "module load python "
+        "module load python && "
         "echo 'Creating snoBIRD_env...' &&"
         "virtualenv --download snoBIRD_env && "
         "source snoBIRD_env/bin/activate && "
