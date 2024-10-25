@@ -16,6 +16,7 @@ import pybedtools
 import warnings
 warnings.filterwarnings("ignore")
 
+
 # Define inputs, outputs and parameters
 all_preds = str(sys.argv[1])
 all_preds = [path for path in all_preds.split('__PRED_SEP__')]
@@ -242,6 +243,7 @@ elif step_size > 1:
                 shell=True)
         sp.call(f'echo IS CUDA AVAILABLE?: {torch.cuda.is_available()}', 
                 shell=True)
+        sp.call(f'echo PYBEDTOOLS VERSION: {pybedtools.__version__}', shell=True)
 
 
 

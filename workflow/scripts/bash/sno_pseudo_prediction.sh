@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo START bash
-
 # Initialize variables
 model=$1
 pretrained_model=$2

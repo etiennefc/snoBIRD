@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo START bash
-
 # Initialize variables
 sno_limits=$1
 pred_df=$2

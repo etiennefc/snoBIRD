@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo START bash
-
 # Initialize variables
 preds=$1
 fasta_dir=$2
@@ -34,12 +32,11 @@ source $SLURM_TMPDIR/snoBIRD_env/bin/activate
 cp $python_script $SLURM_TMPDIR/merge_filter_windows.py
 cp scripts/python/utils.py $SLURM_TMPDIR/utils.py
 cp --parents results/intermediate/predictions/first_model/positive_windows*tsv $SLURM_TMPDIR/
-cp --parents $fasta_dir $SLURM_TMPDIR/
+cp -r --parents $fasta_dir $SLURM_TMPDIR/
 cp --parents $fasta $SLURM_TMPDIR/
 cp -r $pretrained_model $SLURM_TMPDIR/
 cp -r $tokenizer $SLURM_TMPDIR/
 cp $model $SLURM_TMPDIR/snoBIRD_first_model.pt
-cp --parents $genome $SLURM_TMPDIR/
 cp -r $pretrained_model $SLURM_TMPDIR/
 cp -r $tokenizer $SLURM_TMPDIR/
 

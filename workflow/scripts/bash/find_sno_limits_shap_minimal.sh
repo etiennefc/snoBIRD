@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo START bash
-
 # Initialize variables
 shap_df=$1
 pred_df=$2
