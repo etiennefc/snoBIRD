@@ -6,6 +6,7 @@ import re
 import pandas as pd
 import subprocess as sp
 from scipy.signal import find_peaks, savgol_filter
+import RNA
 
 
 """ Various functions used by SnoBIRD to make its 
@@ -746,27 +747,11 @@ def sno_mfe(df, seq_col, len_col):
     """
     seq_dict = dict(zip(df.gene_id, df[seq_col]))
     
-    # Create fasta required for RNAfold 
-    with open('temp_sno_mfe.fa', 'w') as f:
-        for id_, predicted_seq in seq_dict.items():
-            f.write(f'>{id_}\n{predicted_seq}\n')
-
-    # Run RNAfold
-    sp.call("sed 's/>/>SNOBIRD_/g' temp_sno_mfe.fa > SNOBIRD_rna_fold_mfe.fa", 
-            shell=True)
-    sp.call(f'RNAfold --infile=SNOBIRD_rna_fold_mfe.fa --outfile=SNOBIRD.mfe', 
-            shell=True)
-    sp.call("sed -i 's/SNOBIRD_//g' SNOBIRD.mfe", shell=True)
-    
-    # Get MFE in dict
     mfe_dict = {}
-    with open('SNOBIRD.mfe', 'r') as f:
-        for line in f:
-            if line.startswith('>'):
-                gene_id = line.strip('>\n')
-            elif line.startswith('.') | line.startswith('('):
-                mfe = float(line.split(' ', maxsplit=1)[1].strip(' \n()'))
-                mfe_dict[gene_id] = mfe
+    for sno_id, sno_seq in seq_dict.items():
+        dotbracket, mfe_val = RNA.fold(sno_seq)
+        mfe_dict[sno_id] = float(mfe_val)
+
 
     # Create cols for structure stability and normalized MFE by the 
     #  predicted length
@@ -774,8 +759,6 @@ def sno_mfe(df, seq_col, len_col):
     df['normalized_sno_stability'] = df['sno_stability'] / df[len_col]
     df = df.drop(columns=['sno_stability'])
 
-    sp.call('rm temp_sno_mfe.fa SNOBIRD_rna_fold_mfe.fa *.ps SNOBIRD.mfe', 
-            shell=True)
     return df
 
 
@@ -813,56 +796,36 @@ def terminal_stem(df, seq_col, extended_col=False, extended_col_name=None):
     flanking_dict = dict(zip(df.gene_id, zip(
                         df.left_20nt_flanking, df.right_20nt_flanking)))
     
-    # Create fasta required for RNAcofold 
-    # (reversed left seq + '&' + reversed right seq in fasta format)
-    with open('SNOBIRD_terminal_stem.fa', 'w') as f:
-        for id_, flanking_nts in flanking_dict.items():
-            f.write(f'>{id_}\n')
-            # Reverse both flanking seq so that it is 
-            # correctly represented in the RNAcofold plot
-            reverse_left = flanking_nts[0][::-1]
-            reverse_right = flanking_nts[1][::-1]
-            f.write(f'{reverse_left}&{reverse_right}\n')
+    # Convert seqs in right format and run RNAcofold 
+    # (reversed left seq + '&' + reversed right seq)
+    terminal_mfe_dict, terminal_stem_length_dict = {}, {}
+    for id_, flanking_nts in flanking_dict.items():
+        # Reverse both flanking seq so that it is 
+        # correctly represented in the RNAcofold plot
+        reverse_left = flanking_nts[0][::-1]
+        reverse_right = flanking_nts[1][::-1]
+        cofold_seq = f'{reverse_left}&{reverse_right}'
+        dot_bracket, terminal_mfe = RNA.cofold(cofold_seq)
+        terminal_mfe_dict[id_] = float(terminal_mfe)
+        # From the dot bracket, extract the number of paired nt
+        # We select only the left flanking region (20 nt)
+        dot_bracket = dot_bracket[0:20].replace('\n', '')  
+        paired_base = dot_bracket.count('(')
+        # These following ')' are intramolecular paired nt
+        # (i.e. nt pair within left sequence only)
+        intra_paired = dot_bracket.count(')')  
+        # This finds all overlapping (and non-overlapping) gaps of 
+        # 1 to 19 nt inside the left flanking region
+        gaps = re.findall(r'(?=(\(\.{1,19}\())', dot_bracket)
+        number_gaps = ''.join(gaps)  # join all gaps in one string
+        # Count the number of nt gaps in sequence
+        number_gaps = len(re.findall('\.', number_gaps))  
 
-    # Run RNAcofold
-    sp.call(f'RNAcofold < SNOBIRD_terminal_stem.fa > SNOBIRD_terminal.mfe', 
-            shell=True)
-    
+        stem_length_score = paired_base - intra_paired - number_gaps
+        if stem_length_score < 0:
+            stem_length_score = 0
+        terminal_stem_length_dict[id_] = stem_length_score
 
-
-    # Get terminal_stem stability and length score
-    # The terminal stem length score is defined as 
-    # score = paired_nt - intramol_paired_nt - gap_number
-    terminal_mfe_dict = {}
-    terminal_stem_length_dict = {}
-    with open('SNOBIRD_terminal.mfe', 'r') as f:
-        for line in f:
-            if line.startswith('>'):
-                gene_id = line.strip('>\n')
-            elif line.startswith('.') | line.startswith('('):
-                terminal_mfe = float(line.split(' ', 
-                                maxsplit=1)[1].strip(' \n()'))
-                terminal_mfe_dict[gene_id] = terminal_mfe
-
-                # From the dot bracket, extract the number of paired nt
-                dot_bracket = line.split(' ', maxsplit=1)[0]
-                # We select only the left flanking region (20 nt)
-                dot_bracket = dot_bracket[0:20].replace('\n', '')  
-                paired_base = dot_bracket.count('(')
-                # These following ')' are intramolecular paired nt
-                # (i.e. nt pair within left sequence only)
-                intra_paired = dot_bracket.count(')')  
-                # This finds all overlapping (and non-overlapping) gaps of 
-                # 1 to 19 nt inside the left flanking region
-                gaps = re.findall(r'(?=(\(\.{1,19}\())', dot_bracket)
-                number_gaps = ''.join(gaps)  # join all gaps in one string
-                # Count the number of nt gaps in sequence
-                number_gaps = len(re.findall('\.', number_gaps))  
-
-                stem_length_score = paired_base - intra_paired - number_gaps
-                if stem_length_score < 0:
-                    stem_length_score = 0
-                terminal_stem_length_dict[gene_id] = stem_length_score
 
     df['terminal_stem_stability'] = df['gene_id'].map(terminal_mfe_dict)
     df['terminal_stem_length_score'] = df['gene_id'].map(
@@ -873,7 +836,6 @@ def terminal_stem(df, seq_col, extended_col=False, extended_col_name=None):
     df = df.drop(columns=['terminal_stem_stability', 
                 'terminal_stem_length_score', 'left_20nt_flanking', 
                 'right_20nt_flanking'])
-    sp.call('rm SNOBIRD_terminal* *.ps', shell=True)
     return df
 
 

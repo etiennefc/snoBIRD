@@ -8,6 +8,7 @@ warnings.filterwarnings("ignore")
 import numpy as np
 from math import ceil
 import utils as ut
+import RNA
 
 # Load dfs, params and define output
 sno_df = pd.read_csv(str(sys.argv[1]), sep='\t')
