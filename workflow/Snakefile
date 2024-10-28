@@ -20,17 +20,20 @@ include: "rules/download.smk"
 
 if not config.get("download_model"):
     if chunks == True:
-        CHR_ = get_chr_names(input_fasta, chunks, chunk_size)
+        CHR_, CHR_sizes = get_chr_names(input_fasta, chunks, chunk_size)
     else:
         CHR_dict = get_chr_names(input_fasta, chunks, chunk_size)
         CHR_ = list(CHR_dict.keys())
-        config['CHR_dict'] = CHR_dict
+        CHR_sizes = list(CHR_dict.values())
     
     config['CHR_'] = CHR_
+    config['CHR_sizes'] = {c : CHR_sizes[i] for i, c in enumerate(CHR_)}
+
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
         input:
-            final_output = expand('results/final/{output_name}.{output_type}', output_type=ext, output_name=output_name_)
+            final_output = expand('results/final/{output_name}.{output_type}', 
+                                    output_type=ext, output_name=output_name_)
 
 rule all_downloads:
     """ Download all models that constitute SnoBIRD and create the virtualenv 

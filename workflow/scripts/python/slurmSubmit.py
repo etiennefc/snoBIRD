@@ -36,17 +36,9 @@ if job_properties["rule"] in ["genome_prediction"]:
     step_size = job_properties['params']['step_size']
     # Update the cluster properties with the new time limit
     if gpu_type != 'Unknown':
-        if job_properties['params']['chunks'] == True:
-            # get chunk size in bytes
-            chunk_size = int(job_properties['params']['chunk_size'])
-            job_properties['cluster']['time'] = time_limit(chunk_size, 
-                                                    step_size, gpu=gpu_type)
-            
-        else:
-            chr_size_dict = job_properties['params']['chr_dict']
-            chr_wildcard = job_properties['wildcards']['chr_']
-            chr_wildcard_size = chr_size_dict[chr_wildcard]
-            job_properties['cluster']['time'] = time_limit(chr_wildcard_size, 
+        # get chunk/chr size in bytes
+        chunk_chr_size = int(job_properties['params']['real_chunk_chr_size'])
+        job_properties['cluster']['time'] = time_limit(chunk_chr_size, 
                                                     step_size, gpu=gpu_type)
 
 

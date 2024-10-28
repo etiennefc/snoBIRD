@@ -37,9 +37,9 @@ rule genome_prediction:
         strand = config.get('strand'),
         python_script = 'scripts/python/genome_prediction.py',
         gpu = config.get('gpu_generation'),
+        real_chunk_chr_size = lambda wildcards: config['CHR_sizes'][wildcards.chr_],
         chunks = config.get("chunks"),
-        chunk_size = config.get("chunk_size"),
-        chr_dict = config.get('CHR_dict'),
+        chunk_size = config.get("chunk_size"),  # max chunk size (user-defined)
         batch_size = config.get("batch_size"),
         num_labels = config.get('num_labels'),
         cluster_env = rules.create_env.output.env,

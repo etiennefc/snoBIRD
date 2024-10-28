@@ -68,9 +68,13 @@ def get_chunk_names(len_seq, chr_name, max_size=5000000, fixed_length=194):
     
     # Return chunk names
     if num_files == 1:
-        return [chr_name]
-    if num_files > 1:
-        return [f'{chr_name}_chunk_{i}' for i in range(num_files)]
+        return [chr_name], [len_seq]
+    if num_files == 2:
+        return [f'{chr_name}_chunk_{i}' for i in range(num_files)], [
+            int(len_seq/2)] * 2
+    if num_files > 2:
+        return [f'{chr_name}_chunk_{i}' for i in range(num_files)], [
+            max_size] * num_files
 
 
 
@@ -105,19 +109,21 @@ def get_chr_names(input_fasta, chunk_value, chunk_size):
         return all_chr  # return dict of chr and sizes
     
     if chunk_value == True:  # chunks will be created for big chromosomes
-        all_chr_chunks = []
+        all_chr_chunks, all_chr_chunks_sizes = [], []
         if len(all_chr.keys()) > 1:  # multiple chr in the initial fasta
             for c, chr_size_ in all_chr.items():
-                chunk_names = get_chunk_names(chr_size_, c, 
+                chunk_names, c_size = get_chunk_names(chr_size_, c, 
                             max_size=chunk_size)
                 all_chr_chunks.extend(chunk_names)
+                all_chr_chunks_sizes.extend(c_size)
         else:  # only 1 chr in initial fasta, but might be splittable in chunks
             only_chr = list(all_chr.keys())[0]
             only_chr_size = list(all_chr.values())[0]
-            chunk_names = get_chunk_names(only_chr_size, only_chr, 
+            chunk_names, c_size = get_chunk_names(only_chr_size, only_chr, 
                         max_size=chunk_size)
             all_chr_chunks.extend(chunk_names)
-        return all_chr_chunks
+            all_chr_chunks_sizes.extend(c_size)
+        return all_chr_chunks, all_chr_chunks_sizes
 
 
 def is_sbatch_installed2():
