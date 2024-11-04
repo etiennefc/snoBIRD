@@ -48,7 +48,7 @@ def batch_generator(sequences, batch_size):
     for i in range(0, len(sequences), batch_size):
         yield sequences[i:i+batch_size]
 
-def shap_batch(text_batch, gene_ids, pipeline):
+def shap_batch(text_batch, gene_ids, pipeline, max_evals_num=50):
     """
     Compute SHAP values for a given batch of predicted 
     sequences by the first SnoBIRD model.
@@ -62,7 +62,7 @@ def shap_batch(text_batch, gene_ids, pipeline):
     
     # Compute SHAP values for the batch
     explainer = shap.Explainer(pipeline, seed=42, output_names=['Other', 
-                            'CD_snoRNA'], algorithm='partition', max_evals=500)
+                            'CD_snoRNA'], algorithm='partition', max_evals=max_evals_num)
     shap_values_batch = explainer([seq2kmer(t, 6) for t in text_batch])
     shap_values_batch = shap_values_batch.values
     
