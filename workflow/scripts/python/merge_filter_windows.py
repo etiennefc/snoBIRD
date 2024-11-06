@@ -177,6 +177,8 @@ result_df = result_df[result_df['len'] >= (
 center_window = result_df.reset_index(drop=True).copy()
 center_window[['centered_start', 'centered_end']] = center_window.apply(
                     lambda row: ut.centered_window(row, fixed_length), axis=1)
+# correct for 0-based bed
+center_window['centered_start'] = center_window['centered_start'] - 1 
 
 df1_windows = set(df_preds.apply(lambda row: (
                 row['chr'], row['start'], row['end'], row['strand']), axis=1))
@@ -199,10 +201,8 @@ elif step_size > 1:
                                     center_window['is_present_in_df1'] == True]
     non_predicted_windows = center_window[
                                 center_window['is_present_in_df1'] == False]
-    if len(non_predicted_windows) > 0: # some center windows were not predicted
-        # correct for 0-based bed so that we get the right sequence
-        non_predicted_windows['centered_start'] = (
-                                non_predicted_windows['centered_start'] - 1)
+    if len(non_predicted_windows) > 0: # some center windows were not predicted 
+        # (not centered w/r to the step size or prob is not > prob_threshold)
         non_predicted_windows[['chrom', 'centered_start', 'centered_end', 
                             'name', 'score', 'strand', 'len']].reset_index(
                             drop=True).to_csv('center_window_false.bed', 
@@ -313,7 +313,7 @@ elif step_size > 1:
             non_predicted_windows[non_predicted_windows['name'].isin(
             df_center['name'])].reset_index(drop=True), 
             center_window_pos.reset_index(drop=True)])    
-    
+        sp.call('rm center_window_false.bed', shell=True)
     else:  # all center windows were already predicted before
         center_window = center_window[
                                     center_window['is_present_in_df1'] == True]
@@ -355,5 +355,5 @@ center_window[cols_bed + [f'extended_{fixed_length}nt_sequence']].to_csv(
 
 
 
-sp.call('rm temp_preds.bed center_window.bed center_window_false.bed', 
+sp.call('rm temp_preds.bed center_window.bed ', 
         shell=True)
