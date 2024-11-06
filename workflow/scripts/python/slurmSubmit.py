@@ -12,11 +12,11 @@ def time_limit(chr_size_, step_size, gpu='A100'):
     # the bigger the chr_size_, the longer it will take to run
     # the bigger the step_size is, the faster it will take to run
     if gpu == 'H100':
-        rate = 1250000 * step_size
+        rate = 2500000 * step_size
     elif gpu == 'A100':
-        rate = 550000 * step_size #~550KB/h
+        rate = 1700000 * step_size 
     elif gpu == 'V100':
-        rate = 400000 * step_size
+        rate = 450000 * step_size
     elif gpu == 'P100':
         rate = 200000 * step_size
     if chr_size_ <= rate:
