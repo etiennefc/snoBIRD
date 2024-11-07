@@ -938,3 +938,75 @@ def feature_filters(df, prob_column, old_pred_column, new_pred_column,
 
 
 
+""" Functions to create the desired final output."""
+def gtf_attribute(df, col_names):
+    """
+    Create an attribute column as last column of gtf file.
+    """
+    return df.apply(lambda row: '; '.join(
+                    [f'{col} "{row[col]}"' for col in col_names]), axis=1)
+
+
+def make_gtf_from_df(df, minimal=False):
+    """
+    Create a Gene transfer format (.gtf) file from a dataframe.
+    """
+    final_cols = ['gene_id', 'chr', 'source', 'feature', 'start', 'end', 
+                'score', 'strand', 'frame', 'attributes']
+    gene_cols = ['gene_id', 'gene_version', 'gene_name', 'gene_source', 
+                'gene_biotype']
+    transcript_cols = gene_cols + ['transcript_id', 'transcript_version', 
+                'transcript_name', 'transcript_source', 'transcript_biotype', 
+                'tag', 'transcript_support_level']
+    exon_cols = transcript_cols + ['exon_id', 'exon_number', 'exon_version']
+    given_cols = [gene_cols, transcript_cols, exon_cols]
+    
+    gtf = df.copy()
+    gtf['gene_name'] = gtf['gene_id']
+    gtf[['gene_version', 'transcript_version', 'exon_version']] = '1'
+    gtf['transcript_id'] = gtf['gene_id'] + '.t1'
+    gtf['transcript_name'] = gtf['gene_id'] + '-1'
+    gtf[['score', 'frame']] = "."
+    gtf[['source', 'gene_source', 'transcript_source']] = 'SnoBIRD'
+    gtf['exon_id'] = gtf['gene_id'] + '.e1'
+    gtf['exon_number'] = '1'
+    gtf['tag'] = 'basic'
+    gtf['transcript_support_level'] = 'NA'
+
+    if minimal == True:  # second SnoBIRD model was not run
+        gtf[['gene_biotype', 'transcript_biotype']] = 'CD_snoRNA'
+        other = ['probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END', 
+            'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
+            'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END']
+    else:
+        gtf['predicted_label'] = gtf['predicted_label'].replace(
+                                        {'expressed_CD_snoRNA': 'CD_snoRNA'})
+        gtf['gene_biotype'] = gtf['predicted_label']
+        gtf['transcript_biotype'] = gtf['predicted_label']
+        other = ['probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END', 
+            'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
+            'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END',
+            'terminal_stem_score', 'normalized_sno_stability', 
+            'probability_expressed_pseudogene']
+
+    # Build 3 gtf per snoRNA prediction (one gene line, one transcript line 
+    # and one exon line)
+    gtfs = []
+    for i, feature in enumerate(['gene', 'transcript', 'exon']):
+        temp_gtf = gtf.copy()
+        temp_gtf['feature'] = feature
+        if i == 0:  # add box info only for gene line
+            temp_gtf['attributes'] = gtf_attribute(temp_gtf, 
+                                                        given_cols[i] + other)
+        else:
+            temp_gtf['attributes'] = gtf_attribute(temp_gtf, given_cols[i])
+        temp_gtf['attributes'] = temp_gtf['attributes'] + ';'
+        temp_gtf = temp_gtf[final_cols]
+        gtfs.append(temp_gtf) 
+    
+    # Sort gtf by gene_id and drop gene_id column
+    final_gtf = pd.concat(gtfs)
+    final_gtf = final_gtf.sort_values('gene_id').drop(columns='gene_id')
+
+    return final_gtf
+

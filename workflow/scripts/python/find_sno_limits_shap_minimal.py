@@ -83,6 +83,7 @@ df_final = df_final.sort_values(by=['chr', 'strand', 'start'])
 
 if output_type == 'tsv':
     df_final.to_csv(str(sys.argv[3]), sep='\t', index=False)
+
 elif output_type == 'bed':
     df_final['empty_score'] = '.'
     bed_cols = ['chr', 'start', 'end', 'gene_id', 'empty_score', 'strand', 
@@ -99,6 +100,14 @@ elif output_type == 'bed':
     df_final['attributes'] = create_attributes(df_final, att_cols)
     df_final[bed_cols].to_csv(str(sys.argv[3]), sep='\t', 
                                 index=False, header=False)
+
+elif output_type == 'gtf':
+    gtf = ut.make_gtf_from_df(df_final, minimal=True)
+    gtf.to_csv(str(sys.argv[3]), sep='\t', index=False, header=False)
+    sp.call(
+        f'''sed -i 's/;"/;/g; s/"gene_id/gene_id/g; s/""/"/g' {sys.argv[3]}''', 
+        shell=True)
+    
 elif output_type == 'fa':
     with open(str(sys.argv[3]), 'w') as f:
         for row in df_final.iterrows():

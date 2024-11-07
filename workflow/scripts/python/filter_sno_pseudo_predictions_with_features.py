@@ -103,6 +103,12 @@ elif output_type == 'bed':
     df_final['attributes'] = create_attributes(df_final, att_cols)
     df_final[bed_cols].to_csv(output_, sep='\t', index=False, header=False)
 
+elif output_type == 'gtf':
+    gtf = ut.make_gtf_from_df(df_final)
+    gtf.to_csv(output_, sep='\t', index=False, header=False)
+    sp.call(f'''sed -i 's/;"/;/g; s/"gene_id/gene_id/g; s/""/"/g' {output_}''', 
+                shell=True)
+
 elif output_type == 'fa':
     with open(output_, 'w') as f:
         for row in df_final.iterrows():
