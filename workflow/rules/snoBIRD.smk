@@ -113,7 +113,7 @@ rule merge_filter_windows:
         "{params.step_size} {params.chunk_size} {params.batch_size} "
         "{params.num_labels} {params.prob_threshold} "
         "{params.min_consecutive_windows_threshold} {params.python_script} "
-        "{params.cluster_env} {params.profile}; "
+        "{params.cluster_env} {params.profile} {params.gpu}; "
         "fi"
 
 rule shap_snoBIRD:

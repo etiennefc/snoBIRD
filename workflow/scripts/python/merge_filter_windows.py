@@ -8,6 +8,7 @@ import subprocess as sp
 from Bio import SeqIO
 import utils as ut
 import numpy as np
+from math import ceil
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
@@ -38,7 +39,8 @@ prob_threshold = float(sys.argv[14])
 min_consecutive_windows = int(sys.argv[15])
 profile = str(sys.argv[16])
 if profile != 'local':
-    temp_dir = str(sys.argv[17])                            
+    temp_dir = str(sys.argv[17])
+    gpu = str(sys.argv[18])                            
 
 # Concat all predictions of first SnoBIRD model into 1 df (preds from all 
 # chr and/or chunks)
@@ -354,6 +356,21 @@ center_window[cols_bed + [f'extended_{fixed_length}nt_sequence']].to_csv(
 
 
 
+# If job is run on a HPC cluster, update the time limit for the next job 
+# (shap_snoBIRD) based on the number of predictions and GPU type
+if profile != 'local':
+    # cannot overrule 'Unknown' gpu type, which allows user to choose a fixed 
+    # time value for both genome_prediction and shap_snoBIRD rules
+    if gpu != 'Unknown':
+        pred_nb = len(center_window)
+        # number of predictions for which SHAP values are computed per hour 
+        # depending on the GPU
+        gpu_rate = {'P100': 4500, 'V100': 11200, 'A100': 41000, 'H100': 62000}
+        rate = gpu_rate[gpu]
+        time_l = ceil(pred_nb/rate)
+        # Optimize the default time limit based on the number of predicted C/D
+        sp.call("scontrol update jobid=$(squeue -u $USER | grep shap_sno | "+
+                "awk '{print $1}')"+f" TimeLimit={time_l}:00:00", shell=True)
 
 sp.call('rm temp_preds.bed center_window.bed ', 
         shell=True)

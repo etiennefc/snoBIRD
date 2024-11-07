@@ -119,10 +119,13 @@ def main(no_arg=False):
         choices=['H100', 'A100', 'V100', 'P100', 'Unknown'], 
         help='GPU generation (from NVIDIA) that will be used to run SnoBIRD '+
         '(default: A100). WARNING: if Unknown is set, SnoBIRD identification '+
-        'step will take longer to start running, as the same generic longer '+
-        'time will be asked for SnoBIRD to run on each chr/chunks; one can '+
-        'change this generic longer time by changing the time keyword in the '+
-        'genome_prediction entry in the file '+
+        'step (genome_prediction) will take longer to start running, as the '+
+        'same generic longer time will be asked for SnoBIRD to run on each '+
+        'chr/chunks. In addition, if Unknown is set, the shap_snoBIRD step '+
+        'will also take longer to start running because a generic default '+
+        'longer time is allocated for that step. However, one can '+
+        'change these generic longer times by changing the time keyword in '+
+        'the genome_prediction and/or shap_snoBIRD entries in the file '+
         'workflow/profile_slurm/cluster.yaml. To find which GPU generations '+
         'are available on your SLURM cluster, use the command '+
         'sinfo -o "%%N %%G" | grep "[pPaAvVhH]100"', default="A100")
@@ -162,7 +165,7 @@ def main(no_arg=False):
             default="snoBIRD_complete_predictions")
 
     optional_group.add_argument('--output_type', type=str, 
-        choices=['tsv', 'fa', 'bed'],
+        choices=['tsv', 'fa', 'bed', 'gtf'],
         help="Desired output file type, i.e. either a tab-separated (.tsv), "+
             "bed (.bed) or fasta (.fa) file (default: tsv)", default="tsv")
     optional_group.add_argument('--prob_first_model', '-p1', type=float, 

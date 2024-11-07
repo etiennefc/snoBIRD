@@ -17,10 +17,11 @@ genome_prediction:
     gpus-per-node: 1
     cpus-per-task: 2
     mem-per-cpu: 16G
-    time: 0-11:00:00
+    time: 0-11:00:00  # for the change of this value to take place, use snoBIRD with flag -G Unknown
 
 shap_snoBIRD:
     gpus-per-node: 1
+    time: 0-15:00:00  # for the change of this value to take place, use snoBIRD with flag -G Unknown
 
 sno_pseudo_prediction:
     gpus-per-node: 1
