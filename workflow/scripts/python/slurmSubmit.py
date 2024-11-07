@@ -14,7 +14,7 @@ def time_limit(chr_size_, step_size, gpu='A100'):
     if gpu == 'H100':
         rate = 2500000 * step_size
     elif gpu == 'A100':
-        rate = 1700000 * step_size 
+        rate = 1650000 * step_size 
     elif gpu == 'V100':
         rate = 450000 * step_size
     elif gpu == 'P100':
