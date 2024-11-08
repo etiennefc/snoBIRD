@@ -95,7 +95,9 @@ rule merge_filter_windows:
         min_consecutive_windows_threshold = config.get("min_consecutive_windows_threshold"),
         python_script = "scripts/python/merge_filter_windows.py",
         cluster_env = rules.create_env.output.env,
-        profile = config.get("profile")
+        profile = config.get("profile"),
+        final_output = config.get('output_name')  # used to create a unique job name (
+                    # in case multiple snoBIRD instances are run on the same cluster)
     shell:
         "if [ {params.profile} = local ]; then "
         "conda run -p snoBIRD_env/ "
@@ -113,7 +115,8 @@ rule merge_filter_windows:
         "{params.step_size} {params.chunk_size} {params.batch_size} "
         "{params.num_labels} {params.prob_threshold} "
         "{params.min_consecutive_windows_threshold} {params.python_script} "
-        "{params.cluster_env} {params.profile} {params.gpu}; "
+        "{params.cluster_env} {params.profile} {params.gpu} "
+        "{params.final_output}; "
         "fi"
 
 rule shap_snoBIRD:
@@ -136,7 +139,9 @@ rule shap_snoBIRD:
         batch_size = config.get("batch_size"),
         num_labels = config.get('num_labels'),
         cluster_env = rules.create_env.output.env,
-        profile = config.get("profile")
+        profile = config.get("profile"),
+        final_output = config.get('output_name')  # used to create a unique job name (
+                    # in case multiple snoBIRD instances are run on the same cluster)
     shell:
         "if [ {params.profile} = local ]; then "
         "conda run -p snoBIRD_env/ "

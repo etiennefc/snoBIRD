@@ -20,6 +20,7 @@ genome_prediction:
     time: 0-11:00:00  # for the change of this value to take place, use snoBIRD with flag -G Unknown
 
 shap_snoBIRD:
+    job-name: "{rule}.{params.final_output}"
     gpus-per-node: 1
     time: 0-15:00:00  # for the change of this value to take place, use snoBIRD with flag -G Unknown
 

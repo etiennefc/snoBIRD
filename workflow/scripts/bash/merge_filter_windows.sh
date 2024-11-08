@@ -20,6 +20,7 @@ python_script=${16}
 cluster_env=${17}
 profile=${18}
 gpu=${19}
+final_output=${20}
 
 # Load module
 module load python
@@ -63,6 +64,7 @@ $prob_thresh \
 $cons_window \
 $profile \
 $SLURM_TMPDIR/ \
-$gpu
+$gpu \
+$final_output
 
 echo "Merge and filter windows completed!"

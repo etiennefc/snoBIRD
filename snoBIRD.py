@@ -257,6 +257,12 @@ def main(no_arg=False):
     arg_value_range(args.terminal_stem_score, "terminal_stem_score", False)
     arg_value_range(args.normalized_sno_stability, "normalized_sno_stability", 
                     False)
+    # Verify if output_name is <= 100 characters 
+    # (this is for shap_snoBIRD time reallocation to work properly)
+    if len(str(args.output_name)) > 100:
+        raise ValueError(f'Provided output_name: "{args.output_name}" length '+
+        'cannot be > 100 characters. Please reduce your output_name length to'+
+        ' <= 100 characters.')
 
 
     # Define the required args effects

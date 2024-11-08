@@ -40,7 +40,8 @@ min_consecutive_windows = int(sys.argv[15])
 profile = str(sys.argv[16])
 if profile != 'local':
     temp_dir = str(sys.argv[17])
-    gpu = str(sys.argv[18])                            
+    gpu = str(sys.argv[18])  
+    final_output = str(sys.argv[19])                          
 
 # Concat all predictions of first SnoBIRD model into 1 df (preds from all 
 # chr and/or chunks)
@@ -369,7 +370,9 @@ if profile != 'local':
         rate = gpu_rate[gpu]
         time_l = ceil(pred_nb/rate)
         # Optimize the default time limit based on the number of predicted C/D
-        sp.call("scontrol update jobid=$(squeue -u $USER | grep shap_sno | "+
+        sp.call("scontrol update jobid=$(squeue -u $USER "+
+                "--format='%.20i %.112j %.8u %.10M %.6D %R' | "+
+                f"grep -w 'shap_snoBIRD.{final_output}' | "+
                 "awk '{print $1}')"+f" TimeLimit={time_l}:00:00", shell=True)
 
 sp.call('rm temp_preds.bed center_window.bed ', 
