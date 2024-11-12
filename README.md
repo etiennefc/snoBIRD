@@ -1,3 +1,6 @@
+
+![SnoBIRD_logo_small](https://github.com/user-attachments/assets/05f17c18-3b79-4eab-916d-743affdb5f7e)
+
 <div style="text-align: justify">  
 
 # SnoBIRD
