@@ -4,7 +4,6 @@ __default__:
     cpus-per-task: 1
     mem-per-cpu: 8G
     time: 0-1:00:00
-    mail-type: FAIL
 
 merge_filter_windows:
     mem-per-cpu: 16G

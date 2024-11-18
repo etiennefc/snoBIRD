@@ -44,7 +44,7 @@ if job_properties["rule"] in ["genome_prediction"]:
 
 
 cmdline = "sbatch "
-#cmdline = "sbatch --account=[def-youraccount] "
+#cmdline = "sbatch --account=[def-your_account] "
 for param, val in job_properties['cluster'].items():
     cmdline += "--{param} {val} ".format(param=param, val=val)
 
