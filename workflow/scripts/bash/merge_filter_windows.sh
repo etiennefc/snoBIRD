@@ -44,7 +44,9 @@ cp -r $tokenizer $SLURM_TMPDIR/
 
 
 # To fix bug happening on V100l (CUDA not available otherwise...)
-nvidia-modprobe
+# Use only GPU if step_size > 1 (not requested otherwise, because all possible windows will 
+# already have been predicted (i.e. no need to use a GPU)
+if [ $step_size -gt 1 ]; then nvidia-modprobe; fi
 
 python3 $SLURM_TMPDIR/merge_filter_windows.py \
 $preds \

@@ -41,7 +41,11 @@ if job_properties["rule"] in ["genome_prediction"]:
         job_properties['cluster']['time'] = time_limit(chunk_chr_size, 
                                                     step_size, gpu=gpu_type)
 
-
+# No GPU needed for merge_filter_windows if step_size = 1
+if job_properties["rule"] in ["merge_filter_windows"]:
+    step_size = job_properties['params']['step_size']
+    if step_size == 1:
+        job_properties['cluster'].pop('gpus-per-node', None)
 
 cmdline = "sbatch "
 #cmdline = "sbatch --account=[def-your_account] "
