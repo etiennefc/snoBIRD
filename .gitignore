@@ -5,3 +5,5 @@ workflow/results/
 workflow/envs/snoBIRD_env.tar.gz
 workflow/snoBIRD_env/
 snoBIRD_usage.log
+.snakemake/
+workflow/slurm-*.out
