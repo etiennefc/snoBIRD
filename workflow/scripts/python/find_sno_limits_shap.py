@@ -14,7 +14,8 @@ len_c_box, len_d_box = 7, 4
 fixed_length = int(sys.argv[4])
 preds = pd.read_csv(str(sys.argv[2]), sep='\t', names=
         ['chr_window', 'start_window', 'end_window', 'gene_id', 'score', 
-        'strand_window', 'block_name', f'extended_{fixed_length}nt_sequence'])
+        'strand_window', 'block_name', f'extended_{fixed_length}nt_sequence'], 
+        dtype={'chr_window': 'str'})
 shap_df = pd.read_csv(str(sys.argv[1]), sep='\t').rename(
                     columns={'probability': 'probability_CD'})
 shap_df = shap_df[shap_df['predicted_label'] != 'Other']
@@ -54,6 +55,7 @@ df = df.merge(preds[['gene_id', f'extended_{fixed_length}nt_sequence',
                 how='left', on='gene_id')
 
 df[['chr', 'start', 'end', 'strand']] = df.apply(ut.get_sno_location, axis=1)
+df['chr'] = df['chr'].astype(str)
 
 # Get predicted sequence as well as predicted extended sequence
 # These sequence will be used to determine the snoRNA structure stability 

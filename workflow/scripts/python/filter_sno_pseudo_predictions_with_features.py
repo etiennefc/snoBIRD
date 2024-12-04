@@ -16,7 +16,7 @@ sno_df = sno_df.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
 second_model_preds = pd.read_csv(str(sys.argv[2]), sep='\t', 
                     names=['chr_window', 'start_window', 'end_window', 
                     'gene_id', 'block_id', 'probability_expressed_pseudogene', 
-                    'second_model_prediction'], header=0)
+                    'second_model_prediction'], header=0, dtype={'chr_window': 'str'})
 output_ = str(sys.argv[3])
 output_type = str(sys.argv[4])
 fixed_length = int(sys.argv[5])

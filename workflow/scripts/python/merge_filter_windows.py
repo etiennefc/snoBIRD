@@ -92,7 +92,7 @@ df_preds = df_preds.sort_values(by=['chr', 'start', 'strand'])
 
 # This deals with large df_preds memory issues (usually for step_size=1)
 df_preds.to_csv('df_preds_copy_temp.tsv', sep='\t', index=False)
-df_preds = pd.read_csv('df_preds_copy_temp.tsv', sep='\t')
+df_preds = pd.read_csv('df_preds_copy_temp.tsv', sep='\t', dtype={'chr': 'str'})
 df_preds_copy = df_preds.copy()
 print(df_preds)
 print(len(df_preds))
@@ -133,6 +133,7 @@ merged_blocks = preds_bed.groupby(g=[4], c=[2, 3, 4, 6, 5, 1],
                 o=['min', 'max', 'first', 'mean', 'first', 'first'])
 # reorder columns of bed in right order
 merged_blocks = merged_blocks.cut([6, 1, 2, 3, 4, 5]).to_dataframe()  
+merged_blocks['chrom'] = merged_blocks['chrom'].astype(str)
 merged_blocks = merged_blocks.sort_values(by =
                                 ['chrom', 'strand', 'start', 'end'])
 
@@ -383,7 +384,7 @@ if profile != 'local':
         pred_nb = len(center_window)
         # number of predictions for which SHAP values are computed per hour 
         # depending on the GPU
-        gpu_rate = {'P100': 4500, 'V100': 11200, 'A100': 41000, 'H100': 62000}
+        gpu_rate = {'P100': 4500, 'V100': 11200, 'A100': 26000, 'H100': 62000}
         rate = gpu_rate[gpu]
         time_l = ceil(pred_nb/rate)
         # Optimize the default time limit based on the number of predicted C/D
