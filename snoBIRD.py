@@ -307,7 +307,8 @@ def main(no_arg=False):
             find_download()
     if args.dryrun:
         snakemake_cmd = "cd workflow && snakemake "+ profile_local
-        snakemake_cmd += "-n " 
+        snakemake_cmd += "-n "
+        config_l += "dryrun=True " 
         if not args.download_model:
             print("\nExecuting the dryrun (getting the number of chr and/or "+
                 "chunks of chr that will be created)...This may take a bit of"+
@@ -405,6 +406,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         main(no_arg=True)
     else:
+        sp.call('mkdir -p workflow/logs/', shell=True)
         result = main()
         if result is not None:
             arguments, output_final, ext_ = result

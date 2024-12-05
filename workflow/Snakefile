@@ -14,15 +14,20 @@ batch_size = config.get('batch_size')
 output_name_ = config.get('output_name')
 ext = config.get("output_type")
 profile = config.get("profile")
+dryrun = config.get("dryrun")
+gpu = config.get("gpu_generation")
+
 
 include: "rules/common.smk"
 include: "rules/download.smk"
 
 if not config.get("download_model"):
     if chunks == True:
-        CHR_, CHR_sizes = get_chr_names(input_fasta, chunks, chunk_size)
+        CHR_, CHR_sizes = get_chr_names(input_fasta, chunks, chunk_size, 
+                            dryrun=dryrun, gpu=gpu)
     else:
-        CHR_dict = get_chr_names(input_fasta, chunks, chunk_size)
+        CHR_dict = get_chr_names(input_fasta, chunks, chunk_size, 
+                            dryrun=dryrun, gpu=gpu)
         CHR_ = list(CHR_dict.keys())
         CHR_sizes = list(CHR_dict.values())
     
