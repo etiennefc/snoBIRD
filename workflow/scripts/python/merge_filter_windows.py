@@ -57,8 +57,6 @@ for p in all_preds:
     df = df[df['probability_first_model'] > prob_threshold]
     dfs.append(df)
 df_preds = pd.concat(dfs)
-print(df_preds)
-print(len(df_preds))
 
 # For chunks of chr, rectify genomic location of positive windows based on 
 # the number of previous chunks
@@ -94,8 +92,6 @@ df_preds = df_preds.sort_values(by=['chr', 'start', 'strand'])
 df_preds.to_csv('df_preds_copy_temp.tsv', sep='\t', index=False)
 df_preds = pd.read_csv('df_preds_copy_temp.tsv', sep='\t', dtype={'chr': 'str'})
 df_preds_copy = df_preds.copy()
-print(df_preds)
-print(len(df_preds))
 
 # Calculate difference in start positions between consecutive rows
 # It creates a NA for each first row of a group in the groupby
@@ -120,8 +116,6 @@ df_preds['stretch_id'] = (df_preds['diff'] > 1).cumsum()
 df_preds['stretch_id'] =  'block_' + df_preds['stretch_id'].astype(str)
 df_preds = df_preds[['chr', 'start', 'end', 'stretch_id', 'strand', 
                     'probability_first_model']]
-print(df_preds)
-print(len(df_preds))
 df_preds.to_csv('temp_preds.bed', sep='\t', index=False, header=False)
 preds_bed = BedTool('temp_preds.bed')
 
@@ -140,8 +134,6 @@ merged_blocks = merged_blocks.sort_values(by =
 # Get length of block
 merged_blocks['len'] = merged_blocks.end - merged_blocks.start + 1
 
-print(merged_blocks)
-print(len(merged_blocks))
 
 # Merge blocks that overlap reciprocally to at least 50%
 # Apply the merging function row-wise
@@ -176,8 +168,6 @@ result_df = pd.DataFrame(merged_rows)
 result_df = result_df[result_df['len'] >= (
                                     fixed_length + min_consecutive_windows)]
 
-print(result_df)
-print(len(result_df))
 # Deal with large blocks that can contain more than 1 snoRNA (ex: clustered 
 # snoRNAs). They might not have a centered positively predicted window as there 
 # are likely two or more in the same block, so not necessarily centered
@@ -193,8 +183,6 @@ center_window[['centered_start', 'centered_end']] = center_window.apply(
                     lambda row: ut.centered_window(row, fixed_length), axis=1)
 # correct for 0-based bed
 center_window['centered_start'] = center_window['centered_start'] - 1 
-print(center_window)
-print(len(center_window))
 
 df1_windows = set(df_preds_copy.apply(lambda row: (
                 row['chr'], row['start'], row['end'], row['strand']), axis=1))
@@ -209,14 +197,10 @@ center_window['is_present_in_df1'] = center_window.apply(lambda row: (
         row['chrom'], row['centered_start'], row['centered_end'], row['strand']
         ) in df1_windows, axis=1)
 
-print(center_window)
-print(center_window[center_window['is_present_in_df1'] == False])
 
 if step_size == 1:
     # keep only the centered window predicted as CD in those blocks
     center_window = center_window[center_window['is_present_in_df1'] == True]
-    print(center_window)
-    print(len(center_window))
 elif step_size > 1:
     center_window_pos = center_window[
                                     center_window['is_present_in_df1'] == True]
