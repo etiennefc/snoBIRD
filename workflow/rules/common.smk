@@ -130,8 +130,8 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         # Flag potential scaffolds at the end of the input fasta 
         # (if more chr than expected)
         warnings.warn(
-        "\nUserWarning: It seems like your input fasta contains "+
-        f"'{str(num_chr).strip()}' entries (marked by '>'). If this is the "+
+        "\nUserWarning: It seems like your input fasta contains '"+
+        num_chr"' entries (marked by '>'). If this is the "+
         "number of chromosomes/sequences you expect, please ignore this "+
         "message. Otherwise, you should remove unwanted sequences in your "+
         "input (usually scaffolds at the end of genome fasta files) as it "+
@@ -143,14 +143,14 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
     # Check GPU type that user provided vs what is present on the HPC
     if is_sbatch_installed2() == True:  # verify if on HPC cluster
         if gpu != 'Unknown':
-            gen = f'[{gpu[0].upper()+gpu[0].lower()}]'
+            gen = '['+gpu[0].upper()+gpu[0].lower()+']'
             num_ = gpu[1:]
             result = sp.run(['sinfo -o "%N %G" | grep "'+gen+num_+'"'], shell=True, 
                     capture_output=True, text=True).stdout.strip()
             if result == '':
                 warnings.warn(
                 '\nUserWarning: It seems that the GPU generation that you '+
-                f'provided "{gpu.strip()}" (using -G/--gpu_generation, '+
+                'provided "'+gpu+'" (using -G/--gpu_generation, '+
                 'default: "A100") is not present in the available GPUs on '+
                 'your cluster. If you are certain that it is the right GPU '+
                 'generation and that it is available, please ignore this '+
