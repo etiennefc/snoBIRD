@@ -131,7 +131,7 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         # (if more chr than expected)
         warnings.warn(
         "\nUserWarning: It seems like your input fasta contains '"+
-        num_chr+"' entries (marked by '>'). If this is the "+
+        str(num_chr)+"' entries (marked by '>'). If this is the "+
         "number of chromosomes/sequences you expect, please ignore this "+
         "message. Otherwise, you should remove unwanted sequences in your "+
         "input (usually scaffolds at the end of genome fasta files) as it "+
