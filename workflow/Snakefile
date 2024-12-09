@@ -31,6 +31,7 @@ if not config.get("download_model"):
         CHR_ = list(CHR_dict.keys())
         CHR_sizes = list(CHR_dict.values())
     
+    CHR_ = [c.replace(' ', '') for c in CHR_]
     config['CHR_'] = CHR_
     config['CHR_sizes'] = {c : CHR_sizes[i] for i, c in enumerate(CHR_)}
 
