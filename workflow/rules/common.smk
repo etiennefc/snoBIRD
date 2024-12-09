@@ -161,7 +161,6 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
                 'is available using the following command:'+
                 '\n\tsinfo -o "%N %G" | grep "[pPaAvVhH]100"\n')   
 
-#sinfo -o "%N %G" | grep "[pPaAvVhH]100"
     
 
     if chunk_value == None:  # no chunks will be created
