@@ -12,6 +12,7 @@ merge_filter_windows:
     time: 0-2:00:00
 
 genome_prediction:
+    job-name: "{rule}.{params.chr_chunk_name}"
     gpus-per-node: 1
     cpus-per-task: 2
     mem-per-cpu: 16G
@@ -26,7 +27,6 @@ sno_pseudo_prediction:
     gpus-per-node: 1
     time: 0-2:00:00
     mem-per-cpu: 16G
-
 
 filter_sno_pseudo_predictions_with_features:
     time: 0-2:00:00

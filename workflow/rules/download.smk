@@ -49,7 +49,7 @@ rule create_env:
     shell:
         "if [ {params.cluster} = True ]; then "
         "module load python && "
-        "echo 'Creating snoBIRD_env...' &&"
+        "echo 'Creating snoBIRD_env (it can take a while, please be patient)...' &&"
         "virtualenv --download snoBIRD_env && "
         "source snoBIRD_env/bin/activate && "
         "echo 'Downloading packages in snoBIRD_env...' && "

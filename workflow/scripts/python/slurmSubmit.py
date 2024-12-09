@@ -49,6 +49,17 @@ if job_properties["rule"] in ["merge_filter_windows"]:
 
 cmdline = "sbatch "
 #cmdline = "sbatch --account=[def-your_account] "
+
+# Change slurm log name for each job to include the job name
+if job_properties["rule"] == 'shap_snoBIRD':
+    job_name = 'shap_snoBIRD'
+else:
+    job_name = job_properties['cluster']['job-name']
+# logs directory is already created by snoBIRD.py script
+cmdline = cmdline + f"--output=logs/slurmLog-{job_name}-%j.out "
+cmdline = cmdline + f"--error=logs/slurmLog-{job_name}-%j.out "
+
+# Add cluster params value
 for param, val in job_properties['cluster'].items():
     cmdline += "--{param} {val} ".format(param=param, val=val)
 

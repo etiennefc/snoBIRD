@@ -43,7 +43,8 @@ rule genome_prediction:
         batch_size = config.get("batch_size"),
         num_labels = config.get('num_labels'),
         cluster_env = rules.create_env.output.env,
-        profile = config.get("profile")
+        profile = config.get("profile"),
+        chr_chunk_name = '{chr_}'
     shell:
         "if [ {params.profile} = local ]; then "
         "conda run -p snoBIRD_env/ "
