@@ -131,12 +131,12 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         # (if more chr than expected)
         warnings.warn(
         "\nUserWarning: It seems like your input fasta contains "+
-        f"'{num_chr.strip()}' entries (marked by '>'). If this is the number "+
-        "of chromosomes/sequences you expect, please ignore this message. "+
-        "Otherwise, you should remove unwanted sequences in your input ("+
-        "usually scaffolds at the end of genome fasta files) as it will "+
-        "increase SnoBIRD runtime and use GPUs unnecessarily on sequences "+
-        "that are not of interest. To see which sequence/chromosome entries "+
+        f"'{str(num_chr).strip()}' entries (marked by '>'). If this is the "+
+        "number of chromosomes/sequences you expect, please ignore this "+
+        "message. Otherwise, you should remove unwanted sequences in your "+
+        "input (usually scaffolds at the end of genome fasta files) as it "+
+        "will increase SnoBIRD runtime and use GPUs unnecessarily on sequences"+
+        " that are not of interest. To see which sequence/chromosome entries "+
         "are present in your input fasta, run the following command:"+
         "\n\tgrep '>' <input_fasta.fa>\n")
     
