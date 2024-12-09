@@ -130,9 +130,9 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         # Flag potential scaffolds at the end of the input fasta 
         # (if more chr than expected)
         warnings.warn(
-        f"\nUserWarning: It seems like your input fasta contains '{num_chr}' "+
-        "entries (marked by '>'). If this is the number of "+
-        "chromosomes/sequences you expect, please ignore this message. "+
+        "\nUserWarning: It seems like your input fasta contains "+
+        f"'{num_chr.strip()}' entries (marked by '>'). If this is the number "+
+        "of chromosomes/sequences you expect, please ignore this message. "+
         "Otherwise, you should remove unwanted sequences in your input ("+
         "usually scaffolds at the end of genome fasta files) as it will "+
         "increase SnoBIRD runtime and use GPUs unnecessarily on sequences "+
@@ -145,15 +145,14 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         if gpu != 'Unknown':
             gen = f'[{gpu[0].upper()+gpu[0].lower()}]'
             num_ = gpu[1:]
-            print(gen+num_)
             result = sp.run(['sinfo -o "%N %G" | grep "'+gen+num_+'"'], shell=True, 
                     capture_output=True, text=True).stdout.strip()
             if result == '':
                 warnings.warn(
                 '\nUserWarning: It seems that the GPU generation that you '+
-                f'provided "{gpu}" (using -G/--gpu_generation, default: '+
-                '"A100") is not present in the available GPUs on your '+
-                'cluster. If you are certain that it is the right GPU '+
+                f'provided "{gpu.strip()}" (using -G/--gpu_generation, '+
+                'default: "A100") is not present in the available GPUs on '+
+                'your cluster. If you are certain that it is the right GPU '+
                 'generation and that it is available, please ignore this '+
                 'message. Otherwise, please choose carefully your GPU '+
                 'generation as it will strongly impact SnoBIRD runtime (see '+
