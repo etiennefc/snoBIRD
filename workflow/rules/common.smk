@@ -98,6 +98,27 @@ def get_chunk_names(len_seq, chr_name, max_size=5000000, fixed_length=194):
             max_size] * num_files
 
 
+def check_gpu(gpu_name):
+    # Check if GPU provided by user is actually present on the cluster
+    if is_sbatch_installed2() == True:  # verify if on HPC cluster
+        if gpu_name != 'Unknown':
+            gen = '['+gpu_name[0].upper()+gpu_name[0].lower()+']'
+            num_ = gpu_name[1:]
+            result = sp.run(['sinfo -o "%N %G" | grep "'+gen+num_+'"'], 
+                    shell=True, capture_output=True, text=True).stdout.strip()
+            if result == '':
+                warnings.warn(
+                '\nUserWarning: It seems that the GPU generation that you '+
+                'provided "'+gpu_name+'" (using -G/--gpu_generation, '+
+                'default: "A100") is not present in the available GPUs on '+
+                'your cluster. If you are certain that it is the right GPU '+
+                'generation and that it is available, please ignore this '+
+                'message. Otherwise, please choose carefully your GPU '+
+                'generation as it will strongly impact SnoBIRD runtime (see '+
+                'README.md for more info). You can view which GPU generation '+
+                'is available using the following command:'+
+                '\n\tsinfo -o "%N %G" | grep "[pPaAvVhH]100"\n')   
+
 
 def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None, 
                 gpu="A100"):
@@ -141,26 +162,8 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         "\n\tgrep '>' <input_fasta.fa>\n")
     
     # Check GPU type that user provided vs what is present on the HPC
-    if is_sbatch_installed2() == True:  # verify if on HPC cluster
-        if gpu != 'Unknown':
-            gen = '['+gpu[0].upper()+gpu[0].lower()+']'
-            num_ = gpu[1:]
-            result = sp.run(['sinfo -o "%N %G" | grep "'+gen+num_+'"'], shell=True, 
-                    capture_output=True, text=True).stdout.strip()
-            if result == '':
-                warnings.warn(
-                '\nUserWarning: It seems that the GPU generation that you '+
-                'provided "'+gpu+'" (using -G/--gpu_generation, '+
-                'default: "A100") is not present in the available GPUs on '+
-                'your cluster. If you are certain that it is the right GPU '+
-                'generation and that it is available, please ignore this '+
-                'message. Otherwise, please choose carefully your GPU '+
-                'generation as it will strongly impact SnoBIRD runtime (see '+
-                'README.md for more info). You can view which GPU generation '+
-                'is available using the following command:'+
-                '\n\tsinfo -o "%N %G" | grep "[pPaAvVhH]100"\n')   
+    check_gpu(gpu)
 
-    
 
     if chunk_value == None:  # no chunks will be created
         return all_chr  # return dict of chr and sizes

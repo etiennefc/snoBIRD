@@ -35,21 +35,23 @@ if not config.get("download_model"):
         CHR_ = [c.replace(' ', '') for c in CHR_]
         config['CHR_'] = CHR_
         config['CHR_sizes'] = {c : CHR_sizes[i] for i, c in enumerate(CHR_)}
-    if (config.get("input_bed") != None) & (config.get("dryrun") == None):
-        # Find if entries have a specified strand (if not, it doubles the 
-        # number of predictions as we will predict on both strand)
-        input_bed_path = config.get('input_bed')
-        strand_cmd = """awk -v OFS='\t' '$6 !="+" && $6 !="-"' """+ \ 
-                    input_bed_path + """ | wc -l"""
-        no_strand = sp.run([strand_cmd], shell=True, 
-                    capture_output=True, text=True).stdout.strip()
-        len_bed = sp.run(["cat "+input_bed_path+" | wc -l"], shell=True, 
-                    capture_output=True, text=True).stdout.strip()
+    if config.get("input_bed") != None:
+        check_gpu(gpu)
+        if config.get("dryrun") == None:
+            # Find if entries have a specified strand (if not, it doubles the 
+            # number of predictions as we will predict on both strand)
+            input_bed_path = config.get('input_bed')
+            strand_cmd = """awk -v OFS='\t' '$6 !="+" && $6 !="-"' """+ \ 
+                        input_bed_path + """ | wc -l"""
+            no_strand = sp.run([strand_cmd], shell=True, 
+                        capture_output=True, text=True).stdout.strip()
+            len_bed = sp.run(["cat "+input_bed_path+" | wc -l"], shell=True, 
+                        capture_output=True, text=True).stdout.strip()
 
-        # total_entries includes double prediction for entries with no strand 
-        # specified (thus prediction on both + and - strand)
-        total_entries = int(no_strand) + int(len_bed)
-        config['bed_entries'] = total_entries
+            # total_entries includes double prediction for entries with no strand 
+            # specified (thus prediction on both + and - strand)
+            total_entries = int(no_strand) + int(len_bed)
+            config['bed_entries'] = total_entries
 
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
