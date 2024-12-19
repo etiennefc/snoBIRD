@@ -148,11 +148,14 @@ def verify_input_bed(fasta_path, bed_path):
     if int(bigger_regions) > 0:
         warnings.warn("UserWarning: Your input bed file contains "+  
             f"'{bigger_regions}' entries of length > 194 nt. As SnoBIRD "+
-            "can only predict on windows of size <= 194 nt, these entries "+
-            "will not be predicted on by SnoBIRD. Consider reducing the size "+
-            "of these windows to be <= 194 nt if you really want them to be "+
-            "included in the predictions. You can view which entries exceed "+
-            "the window size limit using the following command:\n\t"+
+            "can only predict on windows of size <= 194 nt, only the centered"+
+            " window (of length 194 nt) within these larger entries will be "+
+            "predicted on by SnoBIRD by default. Consider reducing the size "+
+            "of these windows to be <= 194 nt or split them in overlapping "+
+            "windows of size 194 nt if you really want them to be included in"+
+            " the predictions (see README for more information). You can view"+
+            " which entries exceed the window size limit using the following "+
+            "command:\n\t"+
             r"awk -v OFS='\t' '$3-$2+1>194 {print $0}' <input_bed.bed>")
     
 
