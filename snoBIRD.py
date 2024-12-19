@@ -3,6 +3,8 @@ import sys
 import subprocess as sp
 import argparse
 import os
+import warnings
+warnings.formatwarning = lambda msg, *args: f"\033[93m{msg}\033[0m\n"
 
 def find_download(dir_="workflow/data/references/", quiet=False):
     "Find if SnoBIRD models have already been downloaded."
@@ -61,6 +63,99 @@ def is_sbatch_installed():
     except FileNotFoundError:
         # If sbatch is not found, return False
         return False
+
+def verify_input_bed(fasta_path, bed_path):
+    """ Verify that bed cols are separated by tab, that the file has at least 
+        6 columns, that bed entries are <= 194 nt and that start < end cols."""
+
+    # Check if bed is tab-separated
+    tab_cmd = """awk -v FS='\t' '{if (NF < 2) {print $0}}' """ + bed_path + \
+                """ | wc -l"""
+    untab_lines = sp.run([tab_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    if int(untab_lines) > 0:
+        raise ValueError(f'Your input bed file contains "{untab_lines}" lines'+
+            ' that are not tab-separated. Please ensure that all bed entries '+
+            'are tab-separated. You can view which lines are tab-separated or'+
+            ' not using:\n\tcat -t <input_bed.bed>')
+    
+    # Check if file has at least 6 columns
+    col_cmd = """awk -v FS='\t' '{print NF}' """ + bed_path + \
+                """ | sort | uniq """
+    num_cols = sp.run([col_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    num_col_list = list(num_cols.split('\n'))
+    if num_col_list == ['']:
+        raise ValueError('It seems like you provided an empty input bed file '+
+            '(no tab-separated columns were found). Please provide an '+
+            'accurate input bed file.')
+    if len(num_col_list) > 1:
+        raise ValueError('Your input bed file contains an inconsistant '+
+            'number of columns across lines. Lines with the following number '+
+            f'of columns were found: {num_col_list}. Please ensure that all '+
+            'bed entries have the same number of tab-separated columns.')
+    if (len(num_col_list) == 1) & (int(num_col_list[0]) < 6):
+        num_i = int(num_col_list[0])
+        raise ValueError(f"Your input bed file only contains {num_i} columns,"+
+            " which is less than the 6 minimally required columns. Please "+
+            "provide a tab-separated input bed file in the following format:"+
+            "\n\tchr\tstart\tend\tgene_or_locus_id\tscore\tstrand\nIf you "+
+            "don't know the score and/or strand, use '.' as a value for these"+
+            " columns.")
+
+    # Check if chr names in bed files match those in input_fasta
+    chrbed_cmd = """awk -v OFS='\t' '{print $1}' """+bed_path+ \
+                """ | sort | uniq"""
+    chrfasta_cmd = f"grep '>' {fasta_path} | sort | uniq "
+    bed_chr = sp.run([chrbed_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    bed_chr = list(bed_chr.split('\n'))
+    fa_chr = sp.run([chrfasta_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    fa_chr = [i.split(' ')[0].replace('>', '') for i in fa_chr.split('\n')]
+    missing_chr = []
+    for b in bed_chr:
+        if b not in fa_chr:
+            missing_chr.append(b)
+    if len(missing_chr) > 0:
+        raise ValueError('Your input bed file contains entries for which the '+
+            'chromosome name (1st column) is not present in the input fasta '+
+            'file that you provided. Specifically, bed entries with the '+
+            'following chromosomes:\n\t'+
+            f'{missing_chr}\nare not present in the fasta chromosomes:'+
+            f'\n\t{fa_chr}'+
+            '\nPlease fix/remove these mismatch entries from your input bed '+
+            'file (including the header line if present).')
+
+    # Check if the start is < end for all entries
+    loc_cmd = """awk -v FS='\t' '$2>=$3 {print $0}' """ + bed_path + \
+                """ | wc -l"""
+    loc_coord = sp.run([loc_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    if int(loc_coord) > 0:
+        raise ValueError(f"Your input bed file contains '{loc_coord}' entries"+
+            " for which the start is >= to the end value (2nd column >= "+
+            "3rd column). Please fix/remove these lines, as the start should "+
+            "always be smaller than the end, even for genes on the minus "+
+            "strand. You can view these lines with the following command:\n\t"+
+            r"awk -v FS='\t' '$2>=$3 {print $0}' <input_bed.bed>")
+
+    # Raise warning for bed entries that are > 194 nt in length
+    len_cmd = """awk -v OFS='\t' '$3-$2+1>194 {print $0}' """ + bed_path + \
+                """ | wc -l"""
+    bigger_regions = sp.run([len_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+    if int(bigger_regions) > 0:
+        warnings.warn("UserWarning: Your input bed file contains "+  
+            f"'{len(bigger_regions)}' entries of length > 194 nt. As SnoBIRD "+
+            "can only predict on windows of size <= 194 nt, these entries "+
+            "will not be predicted on by SnoBIRD. Consider reducing the size "+
+            "of these windows to be <= 194 nt if you really want them to be "+
+            "included in the predictions. You can view which entries exceed "+
+            "the window size limit using the following command:\n\t"+
+            r"awk -v OFS='\t' '$3-$2+1>194 {print $0}' <input_bed.bed>")
+    
+
 
 
 
@@ -163,11 +258,21 @@ def main(no_arg=False):
             "located in the workflow/results/final/ directory "+
             "(default: snoBIRD_complete_predictions)",
             default="snoBIRD_complete_predictions")
-
     optional_group.add_argument('--output_type', type=str, 
         choices=['tsv', 'fa', 'bed', 'gtf'],
         help="Desired output file type, i.e. either a tab-separated (.tsv), "+
             "bed (.bed) or fasta (.fa) file (default: tsv)", default="tsv")
+    optional_group.add_argument('--input_bed', type=str, 
+        help="COMPLETE (absolute) path to input bed file containing "+
+        "specific genomic locations for SnoBIRD to predict on. This is "+
+        "useful for example if you have identified peaks (regions) of "+
+        "interest in an experiment (CLIP, RNA-Seq, etc.) and want to find if "+
+        "these regions harbor a C/D box snoRNA without having to run SnoBIRD "+
+        "on the entire genome sequence (thereby reducing significantly "+
+        "SnoBIRD's runtime). Entries in the bed file must be <=194 nt and "+
+        "you must still provide an input fasta file of the genome with "+
+        "--input_fasta. The input bed should NOT include a header as the "+
+        "first line")
     optional_group.add_argument('--prob_first_model', '-p1', type=float, 
         help="Minimal prediction probability of a given window to be "+
             "considered as a C/D snoRNA gene by SnoBIRD's first model in the "+
@@ -278,6 +383,13 @@ def main(no_arg=False):
                 print('SnoBIRD models and env need to be downloaded first '+
                         'with:\npython3 snoBIRD.py --download_model')
                 exit()
+        if args.input_bed:
+            config_l += f"input_bed={args.input_bed} "
+            if '/' not in args.input_bed:
+                raise argparse.ArgumentTypeError(f'You must provide the '+ 
+                   f'complete (absolute) path to {args.input_bed}; for '+
+                    'example, </home/your_username/full_path/to/input_bed.bed>'
+                    )
     else:
         if args.download_model:
             snakemake_cmd = "cd workflow && snakemake "
@@ -286,6 +398,10 @@ def main(no_arg=False):
             config_l += "download_model=True "
             config_l += "profile=local "
             find_download()
+        elif args.input_bed:
+            parser.error('An input fasta file of your genome is also required'+
+                        ' when using the --input_bed option. '+
+                        'Please use -i <input_fasta.fa>')
         else:
             parser.error('An input fasta file is required. '+
                         'Please use -i <input_fasta.fa>')
@@ -310,9 +426,15 @@ def main(no_arg=False):
         snakemake_cmd += "-n "
         config_l += "dryrun=True " 
         if not args.download_model:
-            print("\nExecuting the dryrun (getting the number of chr and/or "+
-                "chunks of chr that will be created)...This may take a bit of"+
-                " time for large genomes (ex: <1 min for the human genome).\n")
+            if not args.input_bed:
+                print("\nExecuting the dryrun (getting the number of chr "+
+                "and/or chunks of chr that will be created)...This may take "+
+                "a bit of time for large genomes (ex: <1 min for the human "+
+                "genome).\n")
+            else:
+                print("\nExecuting the dryrun (verifying your input bed and "+
+                "getting the steps that will run)...\n")
+                verify_input_bed(args.input_fasta, args.input_bed)
         else:
             snakemake_cmd = "cd workflow && snakemake all_downloads -n "+ \
                             profile_local 
@@ -389,6 +511,9 @@ def main(no_arg=False):
         if args.first_model_only:  # don't return args w/r to 2nd model
             no_return_var.extend(['prob_second_model', 'box_score', 'score_c', 
                 'score_d', 'terminal_stem_score', 'normalized_sno_stability'])
+        if args.input_bed:  # no args w/r to split_chr and merge_filter_windows
+            no_return_var.extend(['chunks', 'no-chunks', 'chunk_size', 
+                    'step_size', 'consecutive_windows', 'strand'])
 
         if not args.local_profile:  # don't return 'cores' arg if cluster usage
             no_return_var.append('cores')

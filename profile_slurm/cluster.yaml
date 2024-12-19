@@ -23,6 +23,11 @@ shap_snoBIRD:
     gpus-per-node: 1
     time: 0-15:00:00  # for the change of this value to take place, use snoBIRD with flag -G Unknown
 
+predict_and_filter_bed_windows:
+    gpus-per-node: 1
+    time: 0-3:00:00
+    mem-per-cpu: 16G  # for the change of this value to take place, use snoBIRD with flag -G Unknown
+
 sno_pseudo_prediction:
     gpus-per-node: 1
     time: 0-2:00:00

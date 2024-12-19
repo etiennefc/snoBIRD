@@ -13,6 +13,7 @@ rule split_chr:
         cluster_env = rules.create_env.output.env
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule split_chr...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.input_fasta} "
         "{output.split_chr_dir} {params.chunks} {params.chunk_size}; else "
@@ -47,6 +48,7 @@ rule genome_prediction:
         chr_chunk_name = '{chr_}'
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule genome_prediction...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.snoBIRD} "
         "{input.genome_dir}/fasta/{wildcards.chr_}.fa "
@@ -101,6 +103,7 @@ rule merge_filter_windows:
                     # in case multiple snoBIRD instances are run on the same cluster)
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule merge_filter_windows...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {params.input_preds} "
         "{input.input_fasta_dir} {input.input_fasta} {input.pretrained_model} "
@@ -120,6 +123,48 @@ rule merge_filter_windows:
         "{params.final_output}; "
         "fi"
 
+rule predict_and_filter_bed_windows:
+    """ From the input bed windows, predict with the first model of SnoBIRD on 
+        them and filter the windows by score."""
+    input:
+        input_fasta = config.get("input_fasta"),
+        snoBIRD = rules.download_models.output.model1,
+        pretrained_model = rules.download_DNA_BERT.output.dnabert,
+        tokenizer = rules.download_DNA_BERT.output.tokenizer
+    output:
+        center_preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
+    params:
+        input_bed = config.get("input_bed"),
+        fixed_length = config.get('fixed_length'),
+        gpu = config.get('gpu_generation'),
+        batch_size = config.get("batch_size"),
+        num_labels = config.get('num_labels'),
+        prob_threshold = config.get("min_probability_threshold_first_model"),
+        python_script = "scripts/python/predict_and_filter_bed_windows.py",
+        cluster_env = rules.create_env.output.env,
+        profile = config.get("profile"),
+        bed_entries = config.get("bed_entries"), # used to get the number of 
+            #entries in input bed including the doubling of entries that don't have a specified strand,
+        final_output = config.get('output_name')  # used to create a unique job name (
+                    # in case multiple snoBIRD instances are run on the same cluster)
+    shell:
+        "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule predict_and_filter_bed_windows...\n'; "
+        "conda run -p snoBIRD_env/ "
+        "python3 {params.python_script} {input.input_fasta} {params.input_bed} "
+        "{input.pretrained_model} {input.tokenizer} {input.snoBIRD} "
+        "{output.center_preds} {params.fixed_length} {params.batch_size} "
+        "{params.num_labels} {params.prob_threshold} {params.profile} "
+        "{params.gpu} {params.final_output}; else "
+        "bash scripts/bash/predict_and_filter_bed_windows.sh "
+        "{input.snoBIRD} {input.input_fasta} {params.input_bed} "
+        "{input.pretrained_model} {input.tokenizer} "
+        "{output.center_preds} {params.fixed_length} {params.python_script} "
+        "{params.batch_size} {params.num_labels} {params.prob_threshold} "
+        "{params.cluster_env} {params.profile} {params.gpu} "
+        "{params.final_output}; "
+        "fi"
+
 rule shap_snoBIRD:
     """ Compute SHAP values for each predicted C/D snoRNA. This is needed to 
         find the C and D boxes and define the snoRNA limits (start/end) in the 
@@ -128,7 +173,7 @@ rule shap_snoBIRD:
         snoRNA prediction (at the nucleotide resolution)."""
     input:
         snoBIRD = rules.download_models.output.model1,
-        preds = rules.merge_filter_windows.output.center_preds,
+        preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed',
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
         tokenizer = rules.download_DNA_BERT.output.tokenizer
     output:
@@ -145,6 +190,7 @@ rule shap_snoBIRD:
                     # in case multiple snoBIRD instances are run on the same cluster)
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule shap_snoBIRD (be patient)...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.snoBIRD} {input.preds} "
         "{input.pretrained_model} {input.tokenizer} {output.shap_df} "
@@ -167,7 +213,7 @@ rule find_sno_limits_shap_minimal:
         box score (i.e. sum of mutations across the C/D/C'/D' boxes). """
     input:
         shap_df = rules.shap_snoBIRD.output.shap_df,
-        preds = rules.merge_filter_windows.output.center_preds
+        preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     output:
         minimal_output = 'results/final/{output_name}.{output_type}'
     params:
@@ -180,6 +226,7 @@ rule find_sno_limits_shap_minimal:
         profile = config.get("profile")
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule find_sno_limits_shap_minimal...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.shap_df} {input.preds} "
         "{output.minimal_output} {params.output_type} {params.fixed_length} "
@@ -197,7 +244,7 @@ rule find_sno_limits_shap:
         dataframe needed for the second step of SnoBIRD predictions"""
     input:
         shap_df = rules.shap_snoBIRD.output.shap_df,
-        preds = rules.merge_filter_windows.output.center_preds
+        preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     output:
         df = 'results/intermediate/predictions/first_model/SHAP/all_cd_predicted_sno_limits.tsv'
     params:
@@ -209,6 +256,7 @@ rule find_sno_limits_shap:
         profile = config.get("profile")
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule find_sno_limits_shap...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.shap_df} {input.preds} "
         "{output.df} {params.fixed_length} "
@@ -227,7 +275,7 @@ rule sno_pseudo_prediction:
         snoBIRD = rules.download_models.output.model2,
         pretrained_model = rules.download_DNA_BERT.output.dnabert,
         tokenizer = rules.download_DNA_BERT.output.tokenizer,
-        preds = rules.merge_filter_windows.output.center_preds
+        preds = 'results/intermediate/predictions/first_model/filtered_center_positive_windows.bed'
     output:
         windows = "results/intermediate/predictions/second_model/sno_pseudo_predictions.tsv"
     params:
@@ -240,6 +288,7 @@ rule sno_pseudo_prediction:
         profile = config.get("profile")
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule sno_pseudo_prediction...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.snoBIRD} "
         "{input.pretrained_model} {input.tokenizer} {input.preds} "
@@ -277,6 +326,7 @@ rule filter_sno_pseudo_predictions_with_features:
         profile = config.get("profile")
     shell:
         "if [ {params.profile} = local ]; then "
+        "echo 'Starting rule filter_sno_pseudo_predictions_with_features...\n'; "
         "conda run -p snoBIRD_env/ "
         "python3 {params.python_script} {input.sno_limits} "
         "{input.sno_pseudo_preds} {output.final_output} "

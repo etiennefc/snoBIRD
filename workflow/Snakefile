@@ -22,18 +22,34 @@ include: "rules/common.smk"
 include: "rules/download.smk"
 
 if not config.get("download_model"):
-    if chunks == True:
-        CHR_, CHR_sizes = get_chr_names(input_fasta, chunks, chunk_size, 
-                            dryrun=dryrun, gpu=gpu)
-    else:
-        CHR_dict = get_chr_names(input_fasta, chunks, chunk_size, 
-                            dryrun=dryrun, gpu=gpu)
-        CHR_ = list(CHR_dict.keys())
-        CHR_sizes = list(CHR_dict.values())
-    
-    CHR_ = [c.replace(' ', '') for c in CHR_]
-    config['CHR_'] = CHR_
-    config['CHR_sizes'] = {c : CHR_sizes[i] for i, c in enumerate(CHR_)}
+    if config.get("input_bed") == None:
+        if chunks == True:
+            CHR_, CHR_sizes = get_chr_names(input_fasta, chunks, chunk_size, 
+                                dryrun=dryrun, gpu=gpu)
+        else:
+            CHR_dict = get_chr_names(input_fasta, chunks, chunk_size, 
+                                dryrun=dryrun, gpu=gpu)
+            CHR_ = list(CHR_dict.keys())
+            CHR_sizes = list(CHR_dict.values())
+
+        CHR_ = [c.replace(' ', '') for c in CHR_]
+        config['CHR_'] = CHR_
+        config['CHR_sizes'] = {c : CHR_sizes[i] for i, c in enumerate(CHR_)}
+    if (config.get("input_bed") != None) & (config.get("dryrun") == None):
+        # Find if entries have a specified strand (if not, it doubles the 
+        # number of predictions as we will predict on both strand)
+        input_bed_path = config.get('input_bed')
+        strand_cmd = """awk -v OFS='\t' '$6 !="+" && $6 !="-"' """+ \ 
+                    input_bed_path + """ | wc -l"""
+        no_strand = sp.run([strand_cmd], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+        len_bed = sp.run(["cat "+input_bed_path+" | wc -l"], shell=True, 
+                    capture_output=True, text=True).stdout.strip()
+
+        # total_entries includes double prediction for entries with no strand 
+        # specified (thus prediction on both + and - strand)
+        total_entries = int(no_strand) + int(len_bed)
+        config['bed_entries'] = total_entries
 
     rule all:
         """ Run SnoBIRD to predict C/D box snoRNA genes in a genomic sequence."""
@@ -62,3 +78,9 @@ if config.get("first_model_only") == True:
     ruleorder: find_sno_limits_shap_minimal > filter_sno_pseudo_predictions_with_features
 else:
     ruleorder: filter_sno_pseudo_predictions_with_features > find_sno_limits_shap_minimal
+
+# Define which rule to run depending if an input bed file was provided
+if config.get("input_bed") != None:
+    ruleorder: predict_and_filter_bed_windows > merge_filter_windows
+else:
+    ruleorder: merge_filter_windows > predict_and_filter_bed_windows

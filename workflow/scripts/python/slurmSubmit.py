@@ -26,6 +26,25 @@ def time_limit(chr_size_, step_size, gpu='A100'):
         time = f"0-{hours}:00:00"
     return time
 
+# Define function to get the time needed for a given number of entries in a 
+# input bed
+def time_limit_bed(bed_entries, gpu='A100'):
+    # the bigger the number of bed_entries, the longer it will take to run
+    if gpu == 'H100':
+        rate = 2500000  # predicted window per hour
+    elif gpu == 'A100':
+        rate = 1500000 
+    elif gpu == 'V100':
+        rate = 450000
+    elif gpu == 'P100':
+        rate = 200000
+    if int(bed_entries) <= rate:
+        time = "0-1:00:00"
+    else:
+        hours = ceil(int(bed_entries)/rate)
+        time = f"0-{hours}:00:00"
+    return time
+
 
 jobscript = sys.argv[-1]
 job_properties = read_job_properties(jobscript)
@@ -40,6 +59,15 @@ if job_properties["rule"] in ["genome_prediction"]:
         chunk_chr_size = int(job_properties['params']['real_chunk_chr_size'])
         job_properties['cluster']['time'] = time_limit(chunk_chr_size, 
                                                     step_size, gpu=gpu_type)
+
+if job_properties["rule"] in ["predict_and_filter_bed_windows"]:
+    gpu_type = job_properties['params']['gpu']
+    nb_entries = job_properties['params']['bed_entries']
+    # Update the cluster properties with the new time limit
+    if gpu_type != 'Unknown':
+        job_properties['cluster']['time'] = time_limit_bed(nb_entries, 
+                                                gpu=gpu_type)
+
 
 # No GPU needed for merge_filter_windows if step_size = 1
 if job_properties["rule"] in ["merge_filter_windows"]:
