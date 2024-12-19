@@ -88,7 +88,7 @@ def verify_input_bed(fasta_path, bed_path):
     if num_col_list == ['']:
         raise ValueError('It seems like you provided an empty input bed file '+
             '(no tab-separated columns were found). Please provide an '+
-            'accurate input bed file.')
+            'accurate input bed file and make sure the bed path is right.')
     if len(num_col_list) > 1:
         raise ValueError('Your input bed file contains an inconsistant '+
             'number of columns across lines. Lines with the following number '+
