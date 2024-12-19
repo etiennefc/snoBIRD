@@ -147,7 +147,7 @@ def verify_input_bed(fasta_path, bed_path):
                     capture_output=True, text=True).stdout.strip()
     if int(bigger_regions) > 0:
         warnings.warn("UserWarning: Your input bed file contains "+  
-            f"'{len(bigger_regions)}' entries of length > 194 nt. As SnoBIRD "+
+            f"'{bigger_regions}' entries of length > 194 nt. As SnoBIRD "+
             "can only predict on windows of size <= 194 nt, these entries "+
             "will not be predicted on by SnoBIRD. Consider reducing the size "+
             "of these windows to be <= 194 nt if you really want them to be "+
