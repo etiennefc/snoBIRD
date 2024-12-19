@@ -152,14 +152,21 @@ def get_chr_names(input_fasta, chunk_value, chunk_size, dryrun=None,
         # (if more chr than expected)
         warnings.warn(
         "\nUserWarning: It seems like your input fasta contains '"+
-        str(num_chr)+"' entries (marked by '>'). If this is the "+
-        "number of chromosomes/sequences you expect, please ignore this "+
-        "message. Otherwise, you should remove unwanted sequences in your "+
-        "input (usually scaffolds at the end of genome fasta files) as it "+
-        "will increase SnoBIRD runtime and use GPUs unnecessarily on sequences"+
-        " that are not of interest. To see which sequence/chromosome entries "+
-        "are present in your input fasta, run the following command:"+
-        "\n\tgrep '>' <input_fasta.fa>\n")
+        str(num_chr)+"' entries (marked by '>'). If your input fasta contains"+
+        " chromosome sequences and this is the number of chromosomes you "+
+        "expect, please ignore this message. Otherwise, you should remove "+
+        "unwanted sequences in your input (usually scaffolds at the end of "+
+        "genome fasta files) as it will increase SnoBIRD runtime and use "+
+        "GPUs unnecessarily on sequences that are not of interest. If your "+
+        "input fasta contains gene sequences instead of chromosome sequences,"+
+        " you might want to consider running SnoBIRD on a local computer on "+
+        "these small sequences (<5 Mb) or splitting your input fasta into "+
+        "smaller fastas and run SnoBIRD in parallel on these fastas "+
+        "(otherwise, since 1 GPU job will be created per sequence in your "+
+        "fasta, you might get limited by the number of jobs you can submit "+
+        "at the same time on the cluster (max 999 jobs)). To see which "+
+        "chromosome/sequence entries are present in your input "+
+        "fasta, run the following command:\n\tgrep '>' <input_fasta.fa>\n")
     
     # Check GPU type that user provided vs what is present on the HPC
     check_gpu(gpu)
