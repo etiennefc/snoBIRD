@@ -5,7 +5,7 @@ import subprocess as sp
 from Bio import SeqIO
 import os
 import numpy as np
-from math import ceil
+from math import ceil, floor
 import time 
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -59,16 +59,38 @@ df[['chr', 'gene_id', 'score', 'strand']] = df[
                             ['chr', 'gene_id', 'score', 'strand']].astype(str)
 df[['start', 'end']] = df[['start', 'end']].astype(int)
 
-# Drop if length of window is > 194
+# if length of window is > 194, predict only in the centered window 
+# (size 194nt) of that bigger window
 big_preds = list(df[df['end'] - df['start'] + 1 > 194]['gene_id'])
-df = df[df['end'] - df['start'] + 1 <= 194]
-if len(big_preds) > 0:
-    sp.call('echo "WARNING: The following bed entries were filtered out since'+ 
-        ' their length exceeds the maximal 194 nt window size of SnoBIRD:\n'+ 
-        f'{big_preds}\n"', 
-        shell=True)
+df['diff'] = df['end'] - df['start'] + 1 - 194
+# Adjust start and end of large bed entries to predict on their centered window 
+# (split the difference in nt equally between start and end)
+df.loc[(df['gene_id'].isin(big_preds)) & (df['diff'] % 2 == 0), 
+        'start'] = df['start'] + df['diff'] / 2
+df.loc[(df['gene_id'].isin(big_preds)) & (df['diff'] % 2 == 0), 
+        'end'] = df['end'] - df['diff'] / 2
+# if difference in nt is odd, split nt to give 1 more at the 3 end than at the 
+# start
+df.loc[(df['gene_id'].isin(big_preds)) & (df['diff'] % 2 != 0), 
+        'start'] = df['start'] + (df['diff'] / 2).apply(lambda x: floor(x))
+df.loc[(df['gene_id'].isin(big_preds)) & (df['diff'] % 2 != 0), 
+        'end'] = df['end'] - (df['diff'] / 2).apply(lambda x: ceil(x))
 
-# Drop duplicate rows based on gene_id
+# Change gene_id accordingly to reflect that only center_window is predicted on
+df.loc[df['gene_id'].isin(big_preds), 
+        'gene_id'] = df['gene_id'] + '_center_window'
+
+df = df.drop(columns='diff').reset_index(drop=True)
+df[['start', 'end']] = df[['start', 'end']].astype(int)
+
+if len(big_preds) > 0:
+    sp.call('echo "WARNING: The following bed entries have a length that'+ 
+        ' exceeds the maximal 194 nt window size of SnoBIRD (therefore, only '+
+        'the centered window (of length 194 nt) within these larger entries '+
+        'will be predicted on and their gene_or_location_id will be changed '+
+        'to [initial_id]_center_window):\n'+ f'{big_preds}\n"', shell=True)
+
+# Drop duplicate rows based on gene_id, then genomic location
 dup_id_dict = dict(coll.Counter(df['gene_id']))
 dup_id = [dup for dup, num in dup_id_dict.items() if num > 1]
 df = df.drop_duplicates('gene_id')
@@ -141,7 +163,6 @@ pred_df = pd.DataFrame(list(ext_seq_dict.items()),
             columns=['gene_id', f'extended_{window_size}nt_sequence'])
 preds_seqs = list(pred_df[f'extended_{window_size}nt_sequence'])
 kmer_seqs = [seq2kmer(s, 6) for s in preds_seqs]
-
 
 # Define if we use GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
