@@ -164,6 +164,26 @@ pred_df = pd.DataFrame(list(ext_seq_dict.items()),
 preds_seqs = list(pred_df[f'extended_{window_size}nt_sequence'])
 kmer_seqs = [seq2kmer(s, 6) for s in preds_seqs]
 
+# Adjust sequences start/end to have 194 nt windows
+df_bed['len_diff'] = window_size - (df_bed.end - df_bed.start + 1)
+df_bed.loc[(df_bed['len_diff'] > 0) & (df_bed['len_diff'] % 2 == 0), 
+            'left_diff'] = df_bed['len_diff'] / 2
+df_bed.loc[(df_bed['len_diff'] > 0) & (df_bed['len_diff'] % 2 == 0), 
+            'right_diff'] = df_bed['len_diff'] / 2
+df_bed.loc[(df_bed['len_diff'] > 0) & (df_bed['len_diff'] % 2 != 0), 
+            'left_diff'] = df_bed['len_diff'] // 2
+df_bed.loc[(df_bed['len_diff'] > 0) & (df_bed['len_diff'] % 2 != 0), 
+            'right_diff'] = df_bed['len_diff'] // 2 + 1
+
+df_bed[['left_diff', 'right_diff']] = df_bed[['left_diff', 
+                                            'right_diff']].fillna(0)
+df_bed['start'] = df_bed['start'] - df_bed['left_diff']
+df_bed['end'] = df_bed['end'] + df_bed['right_diff']
+df_bed[['chr', 'strand', 'gene_id']] = df_bed[
+                                    ['chr', 'strand', 'gene_id']].astype(str)
+df_bed[['start', 'end']] = df_bed[['start', 'end']].astype(int)
+
+
 # Define if we use GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
