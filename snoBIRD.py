@@ -39,10 +39,10 @@ def arg_value_range(arg_, arg_name, positive=True):
     elif positive == "zero_or_more":  # >= 0
         if arg_ < 0:
             raise ValueError(f'Provided {arg_name}: "{arg_}" must be >= 0.')
-    elif positive == "probability":  # must be between 0 and 1
-        if (arg_ <= 0) | (arg_ >= 1): 
+    elif positive == "probability":  # must be between 0.5 and 1
+        if (arg_ < 0.5) | (arg_ >= 1): 
             raise ValueError(
-                f'Provided {arg_name}: "{arg_}" must be > 0 and < 1.')
+                f'Provided {arg_name}: "{arg_}" must be >= 0.5 and < 1.')
     elif positive == False: # < 0
         if arg_ > 0:
             raise ValueError(f'Provided {arg_name}: "{arg_}" must be <= 0.')
@@ -275,7 +275,9 @@ def main(no_arg=False):
         "SnoBIRD's runtime). Entries in the bed file must be <=194 nt and "+
         "you must still provide an input fasta file of the genome with "+
         "--input_fasta. The input bed should NOT include a header as the "+
-        "first line")
+        "first line. When using --input_bed, the following options are "+
+        "ignored: --chunks/--no-chunks, --chunk_size, --step_size, --strand, "+
+        "--consecutive_windows")
     optional_group.add_argument('--prob_first_model', '-p1', type=float, 
         help="Minimal prediction probability of a given window to be "+
             "considered as a C/D snoRNA gene by SnoBIRD's first model in the "+
