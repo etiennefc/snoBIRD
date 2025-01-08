@@ -14,7 +14,7 @@ SnoBIRD (**B**ERT-based **I**dentification and **R**efinement of C/**D** box **s
 - **Snakemake** version == 7.18.2<br>
 
 ## Installation
-We recommend installing SnoBIRD on the scratch space of your High-Performance Computing (HPC) cluster. This storage space usually contains more memory than your regular project space (which fits well SnoBIRD's storage space requirements as it creates large intermediate files), although it should only be used temporarily (usually in terms of weeks). Therefore, once SnoBIRD is installed and has run successfully, you should move your output predictions to a long-term storage space disk.
+SnoBIRD should be installed on a **SLURM** cluster (SnoBIRD is not designed to work directly with other workload managers such as Load Sharing Facility (LSF)). We recommend installing SnoBIRD on the scratch space of your High-Performance Computing (HPC) SLURM cluster. This storage space usually contains more memory than your regular project space (which fits well SnoBIRD's storage space requirements as it creates large intermediate files), although it should only be used temporarily (usually in terms of weeks). Therefore, once SnoBIRD is installed and has run successfully, you should move your output predictions to a long-term storage space disk.
 
 1 - Conda (Miniconda3) needs to be installed (https://docs.conda.io/en/latest/miniconda.html) via the following commands:
 ```bash
