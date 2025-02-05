@@ -59,57 +59,66 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 first_preds_df = pd.read_csv(str(sys.argv[4]), sep='\t', names=['chr', 'start', 
                     'end', 'gene_id', 'probability_CD', 'strand', 'block_id', 
                     f'extended_{fixed_length}nt_sequence'])
-preds_seqs = list(first_preds_df[f'extended_{fixed_length}nt_sequence'])
-kmer_seqs = [seq2kmer(s, 6) for s in preds_seqs]
 
-# Tokenize data in right format and create dataloader
-tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)  # BertTokenizerFast
-eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True)
-eval_labels = torch.tensor([1] * len(first_preds_df)).to(device, 
-                            non_blocking=True) # fake labels
-eval_dataset = TensorDataset(eval_dataset.input_ids, 
-                            eval_dataset.attention_mask, eval_labels)
-eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size)
+if len(first_preds_df) == 0: # no snoRNA was predicted in input by SnoBIRD
+    final_cols = ['chr', 'start', 'end', 'gene_id', 'block_id', 
+                'probability_expressed_pseudogene', 'second_model_prediction']
+    df = pd.DataFrame(columns=final_cols)
+else:
+    # Transform predictions sequence in kmers (6-mers)
+    preds_seqs = list(first_preds_df[f'extended_{fixed_length}nt_sequence'])
+    kmer_seqs = [seq2kmer(s, 6) for s in preds_seqs]
 
-# Load model
-model = BertForSequenceClassification.from_pretrained(pretrained_model, 
-                                                        num_labels=num_labels)
-model.load_state_dict(torch.load(model_path)) 
-model.to(device, non_blocking=True)
-model.classifier.to(device, non_blocking=True)
+    # Tokenize data in right format and create dataloader
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)  # BertTokenizerFast
+    eval_dataset = tokenizer(kmer_seqs, return_tensors='pt', padding=True)
+    eval_labels = torch.tensor([1] * len(first_preds_df)).to(device, 
+                                non_blocking=True) # fake labels
+    eval_dataset = TensorDataset(eval_dataset.input_ids, 
+                                eval_dataset.attention_mask, eval_labels)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size)
 
-# Run 2nd SnoBIRD model to predict if snoRNA is expressed or a pseudogene
-model.eval()  # put model in evaluation mode
-ev_preds, probs = [], []
-for i, ev_batch in enumerate(eval_dataloader):
-    sp.call(f'echo EVAL BATCH {i+1}', shell=True)
-    ev_input_ids, ev_attention_mask, ev_batch_labels = ev_batch
-    ev_input_ids = ev_input_ids.to(device, non_blocking=True)
-    ev_attention_mask = ev_attention_mask.to(device, non_blocking=True)
-    ev_batch_labels = ev_batch_labels.to(device, non_blocking=True)
-    with torch.no_grad():  # nor gradient computation
-        # Predict the labels of eval_dataset (returns logits here)
-        # where logits are the model's prediction without applying any
-        # activation function (>0: more probable; <0: less probable)
-        output = model(ev_input_ids, attention_mask=ev_attention_mask, 
-                        labels=ev_batch_labels)
-        
-        # Convert logits to probabilities via the softmax activation 
-        # function (in 2nd dimension of output) 
-        probabilities = torch.softmax(output.logits, dim=1)
-        highest_prob, _ = torch.max(probabilities, dim=1)
-        
-        # Get the predicted labels from these probabilities of each class
-        pred_labels = torch.argmax(probabilities, dim=1)  # get the index 
-                                                # (0 or 1) of the highest prob
-        ev_preds += pred_labels.tolist()
-        probs += highest_prob.tolist()
+    # Load model
+    model = BertForSequenceClassification.from_pretrained(pretrained_model, 
+                                                            num_labels=num_labels)
+    model.load_state_dict(torch.load(model_path)) 
+    model.to(device, non_blocking=True)
+    model.classifier.to(device, non_blocking=True)
 
-# Save predictions
-df = pd.DataFrame({'probability_expressed_pseudogene': probs, 
-                    'second_model_prediction': ev_preds})
-df = pd.concat([first_preds_df[
-                ['chr', 'start', 'end', 'gene_id', 'block_id']
-                ].reset_index(drop=True), df], axis=1)
+    # Run 2nd SnoBIRD model to predict if snoRNA is expressed or a pseudogene
+    model.eval()  # put model in evaluation mode
+    ev_preds, probs = [], []
+    for i, ev_batch in enumerate(eval_dataloader):
+        sp.call(f'echo EVAL BATCH {i+1}', shell=True)
+        ev_input_ids, ev_attention_mask, ev_batch_labels = ev_batch
+        ev_input_ids = ev_input_ids.to(device, non_blocking=True)
+        ev_attention_mask = ev_attention_mask.to(device, non_blocking=True)
+        ev_batch_labels = ev_batch_labels.to(device, non_blocking=True)
+        with torch.no_grad():  # nor gradient computation
+            # Predict the labels of eval_dataset (returns logits here)
+            # where logits are the model's prediction without applying any
+            # activation function (>0: more probable; <0: less probable)
+            output = model(ev_input_ids, attention_mask=ev_attention_mask, 
+                            labels=ev_batch_labels)
+
+            # Convert logits to probabilities via the softmax activation 
+            # function (in 2nd dimension of output) 
+            probabilities = torch.softmax(output.logits, dim=1)
+            highest_prob, _ = torch.max(probabilities, dim=1)
+
+            # Get the predicted labels from these probabilities of each class
+            pred_labels = torch.argmax(probabilities, dim=1)  # get the index 
+                                                    # (0 or 1) of the highest prob
+            ev_preds += pred_labels.tolist()
+            probs += highest_prob.tolist()
+
+    # Create final df
+    df = pd.DataFrame({'probability_expressed_pseudogene': probs, 
+                        'second_model_prediction': ev_preds})
+    df = pd.concat([first_preds_df[
+                    ['chr', 'start', 'end', 'gene_id', 'block_id']
+                    ].reset_index(drop=True), df], axis=1)
+
+# Save predictions                    
 df.to_csv(df_preds, sep='\t', index=False)
 

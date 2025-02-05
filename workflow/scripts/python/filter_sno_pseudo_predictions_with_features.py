@@ -27,64 +27,78 @@ score_d_thresh = int(sys.argv[9])
 terminal_combined_thresh = float(sys.argv[10])
 sno_mfe_thresh = float(sys.argv[11])
 
+# if no snoRNA was predicted by SnoBIRD in input sequence
+if (len(sno_df) == 0) | (len(second_model_preds) == 0):
+    final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 
+                'probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END',
+                'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
+                'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END', 
+                'terminal_stem_score', 'normalized_sno_stability', 
+                'probability_expressed_pseudogene', 'predicted_label', 
+                'predicted_sequence']
+    df_final = pd.DataFrame(columns=final_cols)
+    sp.call("echo 'WARNING: No C/D box snoRNA was predicted (identified) by "+
+            "SnoBIRD in your input sequence\n'", shell=True)
+else:
+    # Compute snoRNA length, normalized structure stability and 
+    # terminal stem combined score
+    sno_df['sno_length'] = sno_df['predicted_sequence'].apply(
+                                    lambda x: len(x))
 
-# Compute snoRNA length, normalized structure stability and 
-# terminal stem combined score
-sno_df['sno_length'] = sno_df['predicted_sequence'].apply(
-                                lambda x: len(x))
-
-sno_df = ut.sno_mfe(sno_df, 'predicted_sequence',
-                    'sno_length')
-
-
-# Get terminal stem stability/score and combined
-sno_df = ut.terminal_stem(sno_df, 
-                f'extended_{fixed_length}nt_sequence', extended_col=True, 
-                extended_col_name='predicted_extended_sequence')
-
-# Merge with second model predictions and round values
-sno_df = sno_df.merge(second_model_preds[
-                    ['gene_id', 'probability_expressed_pseudogene', 
-                    'second_model_prediction']], how='left', on='gene_id')
-
-sno_df['normalized_sno_stability'] = sno_df[
-                                        'normalized_sno_stability'].round(2)
-sno_df['terminal_stem_score'] = sno_df['terminal_combined'].round(2)
+    sno_df = ut.sno_mfe(sno_df, 'predicted_sequence',
+                        'sno_length')
 
 
-# Filter predictions using the feature values
-int_cols = ['score_c', 'score_d', 'box_score']
-float_cols = ['probability_expressed_pseudogene', 'terminal_combined', 
-            'normalized_sno_stability']
-sno_df[int_cols] = sno_df[int_cols].astype(int)
-sno_df[float_cols] = sno_df[float_cols].astype(float)
-sno_df = ut.feature_filters(sno_df, 'probability_expressed_pseudogene', 
-            'second_model_prediction', 'predicted_label', 
-            terminal_combined=terminal_combined_thresh, sno_mfe=sno_mfe_thresh, 
-            box_score=box_score_thresh, score_c=score_c_thresh, 
-            score_d=score_d_thresh, prob_thresh=prob_sno_pseudo_thresh)
+    # Get terminal stem stability/score and combined
+    sno_df = ut.terminal_stem(sno_df, 
+                    f'extended_{fixed_length}nt_sequence', extended_col=True, 
+                    extended_col_name='predicted_extended_sequence')
 
-# Last filter: exclude sequences that have N in it
-sno_df = sno_df[~sno_df['predicted_sequence'].str.contains('N')]
+    # Merge with second model predictions and round values
+    sno_df = sno_df.merge(second_model_preds[
+                        ['gene_id', 'probability_expressed_pseudogene', 
+                        'second_model_prediction']], how='left', on='gene_id')
 
-
-# Save final output
-final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 
-            'probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END',
-            'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
-            'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END', 
-            'terminal_stem_score', 'normalized_sno_stability', 
-            'probability_expressed_pseudogene', 'predicted_label', 
-            'predicted_sequence']
-
-int_cols = ['start', 'end', 'C_START', 'C_END', 'D_START', 'D_END', 
-            'C_PRIME_START', 'C_PRIME_END', 'D_PRIME_START', 'D_PRIME_END', 
-            'box_score']
-df_final = sno_df[final_cols]
-df_final[int_cols] = df_final[int_cols].astype(int)
-df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
+    sno_df['normalized_sno_stability'] = sno_df[
+                                            'normalized_sno_stability'].round(2)
+    sno_df['terminal_stem_score'] = sno_df['terminal_combined'].round(2)
 
 
+    # Filter predictions using the feature values
+    int_cols = ['score_c', 'score_d', 'box_score']
+    float_cols = ['probability_expressed_pseudogene', 'terminal_combined', 
+                'normalized_sno_stability']
+    sno_df[int_cols] = sno_df[int_cols].astype(int)
+    sno_df[float_cols] = sno_df[float_cols].astype(float)
+    sno_df = ut.feature_filters(sno_df, 'probability_expressed_pseudogene', 
+                'second_model_prediction', 'predicted_label', 
+                terminal_combined=terminal_combined_thresh, sno_mfe=sno_mfe_thresh, 
+                box_score=box_score_thresh, score_c=score_c_thresh, 
+                score_d=score_d_thresh, prob_thresh=prob_sno_pseudo_thresh)
+
+    # Last filter: exclude sequences that have N in it
+    sno_df = sno_df[~sno_df['predicted_sequence'].str.contains('N')]
+
+
+    # Save final output
+    final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 
+                'probability_CD', 'box_score', 'C_MOTIF', 'C_START', 'C_END',
+                'D_MOTIF', 'D_START', 'D_END', 'C_PRIME_MOTIF', 'C_PRIME_START', 
+                'C_PRIME_END', 'D_PRIME_MOTIF', 'D_PRIME_START', 'D_PRIME_END', 
+                'terminal_stem_score', 'normalized_sno_stability', 
+                'probability_expressed_pseudogene', 'predicted_label', 
+                'predicted_sequence']
+
+    int_cols = ['start', 'end', 'C_START', 'C_END', 'D_START', 'D_END', 
+                'C_PRIME_START', 'C_PRIME_END', 'D_PRIME_START', 'D_PRIME_END', 
+                'box_score']
+    df_final = sno_df[final_cols]
+    df_final[int_cols] = df_final[int_cols].astype(int)
+    df_final = df_final.drop_duplicates(subset=['chr', 'start', 'end', 'strand'])
+
+
+
+# Create final output
 if output_type == 'tsv':
     df_final.to_csv(output_, sep='\t', index=False)
 
@@ -107,10 +121,15 @@ elif output_type == 'bed':
     df_final[bed_cols].to_csv(output_, sep='\t', index=False, header=False)
 
 elif output_type == 'gtf':
-    gtf = ut.make_gtf_from_df(df_final)
-    gtf.to_csv(output_, sep='\t', index=False, header=False)
-    sp.call(f'''sed -i 's/;"/;/g; s/"gene_id/gene_id/g; s/""/"/g' {output_}''', 
-                shell=True)
+    # no snoRNA was predicted in input by SnoBIRD
+    if len(df_final) == 0:
+        df_final.to_csv(output_, sep='\t', index=False, header=False)
+    else:
+        gtf = ut.make_gtf_from_df(df_final)
+        gtf.to_csv(output_, sep='\t', index=False, header=False)
+        sp.call(
+            f'''sed -i 's/;"/;/g; s/"gene_id/gene_id/g; s/""/"/g' {output_}''', 
+            shell=True)
 
 elif output_type == 'fa':
     with open(output_, 'w') as f:
