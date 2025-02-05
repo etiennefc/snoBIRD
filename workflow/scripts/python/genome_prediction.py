@@ -10,8 +10,8 @@ import time
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import transformers
-from transformers import AutoTokenizer, BertForSequenceClassification
-from utils import seq2kmer
+from transformers import AutoTokenizer, BertForSequenceClassification, TextClassificationPipeline
+from utils import seq2kmer, batch_generator
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -70,10 +70,10 @@ end_time = time.time()
 sp.call(f'echo LOAD INITIAL MODEL: {end_time-start_time}s', shell=True)
 
 
-if strand == 'positive':
+if strand == 'plus':
     chr_dict = {record.id: str(record.seq) 
                 for record in SeqIO.parse(genome, "fasta")}
-elif strand == 'negative':
+elif strand == 'minus':
     chr_dict = {record.id: str(record.seq.reverse_complement()) 
                 for record in SeqIO.parse(genome, "fasta")}
 else: # predict on both strands
@@ -124,11 +124,7 @@ def scan_fasta(chr_dict_, chr_seq, window_size, mini_batch_size, step_size=step_
             # where len(kmer_seqs) = mini_batch_size * mem_batch_size 
             yield eval_dataset, starts, ends   
 
-        # Keep start/end and strand of sequences in batch
-    elif len_chr == window_size: 
-        n_windows = 1
-        ###TO adapt to 190 nt sequences as input
-    else:
+    elif len_chr < window_size:
         ##TO ADAPT for just the snoRNA sequence (to pad to window_length?)
         raise ValueError(f'Length of sequence {id_chr} ({len_chr}) must be >= than length of window size ({window_size})')
 
@@ -237,19 +233,30 @@ def predict(chr_dictio, chr_seq, window_size, mini_batch_size, strand_name, mem_
 
 
 if strand != 'both':
-    strand_symbol = {'positive': '+', 'negative': '-'}
+    strand_symbol = {'plus': '+', 'minus': '-'}
     s = strand_symbol[strand]
     start_time = time.time()
     seq_ = chr_dict[chr_name]
     sp.call(f'echo PREDICT ON {s} STRAND {chr_name}', shell=True)
-    results_df = predict(chr_dict, seq_, window_size, batch_size, s, mem_batch=10)
-    results_df = results_df.sort_values(by=['start', 'end'])
-    if strand == 'negative':
+    if len(seq_) <= window_size:
+        kmer_seq = [seq2kmer(seq_, 6)]
+        pipe = TextClassificationPipeline(model=model, tokenizer=tokenizer, device=device, batch_size=batch_size)
+        tokenizer_kwargs = {'padding': True}
+        pred_batch = pipe(kmer_seq, **tokenizer_kwargs)
+        pred_label = [pred['label'] for pred in pred_batch if pred['label'] == 'LABEL_1']
+        probability = [pred['score'] for pred in pred_batch][0]
+        if len(pred_label) > 0:
+            results_df = pd.DataFrame([[chr_name, s, 0, window_size, probability]], columns=df_cols)
+        else:
+            results_df = pd.DataFrame(columns=df_cols)
+    else:
+        results_df = predict(chr_dict, seq_, window_size, batch_size, s, mem_batch=10)
+        results_df = results_df.sort_values(by=['start', 'end'])
+    if strand == 'minus':
         # Correct for the actual start and ends of snoRNAs based on the first nt not the last
         results_df['start'] = len(seq_) - results_df['start'] + 1
         results_df['end'] = len(seq_) - results_df['end'] + 1
         # Switch start and end because it is the opposite on the - strand
-        #print(results_df)
         results_df = results_df.rename(columns={'start': 'end', 'end': 'start'})
         results_df = results_df[df_cols].sort_values(by=['start', 'end']).reset_index(drop=True)
     end_time = time.time()
@@ -259,10 +266,36 @@ else:  # predict on both strands
     start_time = time.time()
     seq_pos = chr_dict[chr_name]
     sp.call(f'echo PREDICT ON + STRAND {chr_name}', shell=True)
-    pos_strand_results = predict(chr_dict, seq_pos, window_size, batch_size, '+', mem_batch=10)
+    if len(seq_pos) <= window_size:
+        kmer_seq = [seq2kmer(seq_pos, 6)]
+        pipe = TextClassificationPipeline(model=model, tokenizer=tokenizer, device=device, batch_size=batch_size)
+        tokenizer_kwargs = {'padding': True}
+        pred_batch = pipe(kmer_seq, **tokenizer_kwargs)
+        pred_label = [pred['label'] for pred in pred_batch if pred['label'] == 'LABEL_1']
+        probability = [pred['score'] for pred in pred_batch][0]
+        if len(pred_label) > 0:
+            pos_strand_results = pd.DataFrame([[chr_name, '+', 0, window_size, probability]], columns=df_cols)
+        else:
+            pos_strand_results = pd.DataFrame(columns=df_cols)
+    else:
+        pos_strand_results = predict(chr_dict, seq_pos, window_size, batch_size, '+', mem_batch=10)
+
     seq_neg = chr_dict_neg[chr_name]
     sp.call(f'echo PREDICT ON - STRAND {chr_name}', shell=True)
-    neg_strand_results = predict(chr_dict_neg, seq_neg, window_size, batch_size, '-')
+    if len(seq_neg) <= window_size:
+        kmer_seq = [seq2kmer(seq_neg, 6)]
+        pipe = TextClassificationPipeline(model=model, tokenizer=tokenizer, device=device, batch_size=batch_size)
+        tokenizer_kwargs = {'padding': True}
+        pred_batch = pipe(kmer_seq, **tokenizer_kwargs)
+        pred_label = [pred['label'] for pred in pred_batch if pred['label'] == 'LABEL_1']
+        probability = [pred['score'] for pred in pred_batch][0]
+        if len(pred_label) > 0:
+            neg_strand_results = pd.DataFrame([[chr_name, '-', 0, window_size, probability]], columns=df_cols)
+        else:
+            neg_strand_results = pd.DataFrame(columns=df_cols)
+    else:
+        neg_strand_results = predict(chr_dict_neg, seq_neg, window_size, batch_size, '-')
+
     # Correct for the actual start and ends of snoRNAs based on the first nt not the last (for - strand only)
     neg_strand_results['start'] = len(seq_neg) - neg_strand_results['start'] + 1
     neg_strand_results['end'] = len(seq_neg) - neg_strand_results['end'] + 1
@@ -270,7 +303,6 @@ else:  # predict on both strands
     neg_strand_results = neg_strand_results.rename(columns={'start': 'end', 'end': 'start'})
     neg_strand_results = neg_strand_results[df_cols]
     results_df = pd.concat([pos_strand_results, neg_strand_results]).sort_values(by=['start', 'end']).reset_index(drop=True)
-    print(results_df)
     end_time = time.time()
     sp.call(f'echo FINAL elapsed time {chr_name}: {end_time -start_time}s', shell=True)
     results_df.to_csv(output, index=False, sep='\t')

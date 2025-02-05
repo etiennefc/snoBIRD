@@ -102,10 +102,12 @@ rule merge_filter_windows:
         final_output = config.get('output_name')  # used to create a unique job name (
                     # in case multiple snoBIRD instances are run on the same cluster)
     shell:
+        "for i in results/intermediate/predictions/first_model/positive_windows_*; "
+        "do echo ${{i#workflow/}} >> temp_input_preds_{params.final_output}; done; "
         "if [ {params.profile} = local ]; then "
         "echo 'Starting rule merge_filter_windows...\n'; "
         "conda run -p snoBIRD_env/ "
-        "python3 {params.python_script} {params.input_preds} "
+        "python3 {params.python_script} temp_input_preds_{params.final_output} "
         "{input.input_fasta_dir} {input.input_fasta} {input.pretrained_model} "
         "{input.tokenizer} {input.snoBIRD} {output.filtered_preds} "
         "{output.center_preds} {params.fixed_length} {params.step_size} "
@@ -113,7 +115,7 @@ rule merge_filter_windows:
         "{params.prob_threshold} {params.min_consecutive_windows_threshold} "
         "{params.profile}; else "
         "bash scripts/bash/merge_filter_windows.sh "
-        "{params.input_preds} {input.input_fasta_dir} {input.input_fasta} "
+        "temp_input_preds_{params.final_output} {input.input_fasta_dir} {input.input_fasta} "
         "{input.pretrained_model} {input.tokenizer} {input.snoBIRD} "
         "{output.filtered_preds} {output.center_preds} {params.fixed_length} "
         "{params.step_size} {params.chunk_size} {params.batch_size} "
@@ -121,7 +123,7 @@ rule merge_filter_windows:
         "{params.min_consecutive_windows_threshold} {params.python_script} "
         "{params.cluster_env} {params.profile} {params.gpu} "
         "{params.final_output}; "
-        "fi"
+        "fi; rm temp_input_preds_{params.final_output}"
 
 rule predict_and_filter_bed_windows:
     """ From the input bed windows, predict with the first model of SnoBIRD on 

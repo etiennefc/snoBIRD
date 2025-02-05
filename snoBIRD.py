@@ -250,7 +250,7 @@ def main(no_arg=False):
         "WARNING: setting s=1 will increase SnoBIRD's runtime by ~5 fold "+
         "compared to the default value", default=5)
     optional_group.add_argument('--strand', '-S', type=str, 
-        choices=['both', '+', '-'], 
+        choices=['both', 'plus', 'minus'], 
         help="Strand on which to predict (default: both)", default="both")
     optional_group.add_argument('--batch_size', '-b', type=int, 
         help='Number of sequences per batch that are processed in parallel '+
@@ -281,10 +281,11 @@ def main(no_arg=False):
     optional_group.add_argument('--prob_first_model', '-p1', type=float, 
         help="Minimal prediction probability of a given window to be "+
             "considered as a C/D snoRNA gene by SnoBIRD's first model in the "+
-            "identification step (default: 0.999); WARNING: lowering this "+
-            "number can dramaticaly increase the number of false positives, "+
-            "whereas increasing this number can increase the number of false "+
-            "negatives ", default=0.999)
+            "identification step (default: 0.999, or 0.9 if --input_bed is "+
+            "specified or if all input sequences are of length <= 194 nt); "+
+            "WARNING: lowering this number can dramaticaly increase the "+
+            "number of false positives, whereas increasing this number can "+
+            "increase the number of false negatives ", default=0.999)
     optional_group.add_argument('--consecutive_windows', '-w', type=int, 
         help="Minimum number of consecutive windows predicted as a C/D snoRNA"+
             " gene by SnoBIRD's first model to be considered as a C/D snoRNA "+
@@ -457,7 +458,7 @@ def main(no_arg=False):
     if args.step_size:
         config_l += f"step_size={args.step_size} "
     if args.strand:
-        config_l += f"strand={args.strand} "
+        config_l += f"strand='{args.strand}' "
     if args.batch_size:
         config_l += f"batch_size={args.batch_size} "
     if args.chunks:
@@ -469,8 +470,16 @@ def main(no_arg=False):
     if args.gpu_generation:
         config_l += f"gpu_generation={args.gpu_generation} "
     if args.prob_first_model:
-        config_l += (
-            f"min_probability_threshold_first_model={args.prob_first_model} ")
+        if args.input_bed:
+            if args.prob_first_model != 0.999:  # user-defined
+                config_l += (
+                f"min_probability_threshold_first_model={args.prob_first_model} ")
+            else:  # less stringent threshold as less windows are predicted on 
+                config_l += (
+                f"min_probability_threshold_first_model={0.9} ")
+        else:
+            config_l += (
+                f"min_probability_threshold_first_model={args.prob_first_model} ")
     if args.consecutive_windows:
         config_l += (
             f"min_consecutive_windows_threshold={args.consecutive_windows} ")

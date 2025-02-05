@@ -54,9 +54,11 @@ def shap_batch(text_batch, gene_ids, pipeline, max_evals_num=50):
     sequences by the first SnoBIRD model.
     """
     pred_label_dict = {'LABEL_0': 'Other', 'LABEL_1': 'CD_snoRNA'}
+    tokenizer_kwargs = {'padding': True}
     
     # Perform prediction on the batch
-    prediction_batch = pipeline([seq2kmer(text, 6) for text in text_batch])
+    prediction_batch = pipeline([seq2kmer(text, 6) for text in text_batch], 
+                        **tokenizer_kwargs)
     predicted_labels = [pred['label'] for pred in prediction_batch]
     probabilities = [pred['score'] for pred in prediction_batch]
     
