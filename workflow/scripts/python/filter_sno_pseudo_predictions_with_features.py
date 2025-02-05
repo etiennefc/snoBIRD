@@ -64,6 +64,9 @@ sno_df = ut.feature_filters(sno_df, 'probability_expressed_pseudogene',
             box_score=box_score_thresh, score_c=score_c_thresh, 
             score_d=score_d_thresh, prob_thresh=prob_sno_pseudo_thresh)
 
+# Last filter: exclude sequences that have N in it
+sno_df = sno_df[~sno_df['predicted_sequence'].str.contains('N')]
+
 
 # Save final output
 final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 

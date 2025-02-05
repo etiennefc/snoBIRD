@@ -69,6 +69,9 @@ df = df.apply(ut.correct_box_pos, axis=1,
                 motifs=['C', 'D', 'C_PRIME', 'D_PRIME'])
 
 
+# Apply final filter (exlude sequences with N within the snoRNA sequence, 
+df = df[~df['predicted_sequence'].str.contains('N')]
+
 # Save df or fasta depending on the user-defined output type
 final_cols = ['gene_id', 'chr', 'start', 'end', 'strand', 'probability_CD', 
             'box_score', 'C_MOTIF', 'C_START', 'C_END', 'D_MOTIF', 'D_START', 
