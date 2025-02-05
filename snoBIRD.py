@@ -6,6 +6,8 @@ import os
 import warnings
 warnings.formatwarning = lambda msg, *args: f"\033[93m{msg}\033[0m\n"
 
+snoBIRD_version = 'v0.1'
+
 def find_download(dir_="workflow/data/references/", quiet=False):
     "Find if SnoBIRD models have already been downloaded."
     model_download = "will be downloaded!"
@@ -346,7 +348,7 @@ def main(no_arg=False):
         parser.print_help()
         exit()
     if args.version:
-        print('SnoBIRD v0.1')
+        print(f'SnoBIRD {snoBIRD_version}')
         exit()
 
     # No options or input were given
@@ -559,6 +561,9 @@ if __name__ == "__main__":
                     'snoBIRD_usage.log', shell=True)
             sp.call(f'echo workflow/results/final/{output_final}.{ext_} >> '+
                     'snoBIRD_usage.log', shell=True)
+            sp.call('echo "##[SnoBIRD version]:" >> snoBIRD_usage.log', 
+                                                                    shell=True)
+            sp.call(f'echo {snoBIRD_version} >> snoBIRD_usage.log', shell=True)
             sp.call('echo "##[Used packages versions]:" >> snoBIRD_usage.log', 
                                                                     shell=True)
             if is_sbatch_installed():

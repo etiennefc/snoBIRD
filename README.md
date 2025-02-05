@@ -63,7 +63,7 @@ python3 snoBIRD.py [-options] -i </home/your_username/full_path/to/input_fasta.f
 
 By default, these commands will run **both** the first and second model of SnoBIRD, which will identify in your input sequence C/D box snoRNA genes (first model) and refine these predicted C/D box snoRNA genes by predicting if they are expressed snoRNAs or snoRNA pseudogenes (second model). SnoBIRD also assumes, by default, that it is run on a HPC cluster. Therefore, these previous command lines should be run **directly on the login node** of your HPC cluster (SnoBIRD will automatically submit your jobs on computing nodes with pre-optimized parameters for each job (e.g. memory, number of CPU/GPU, time, etc.)).
 
-Your final predictions will be located in the file `workflow/results/final/snoBIRD_complete_predictions.tsv`, a tab-separated file (.tsv) by default. All your log files will be located in the directory `workflow/logs/`.
+Your final predictions will be located in the file `workflow/results/final/snoBIRD_complete_predictions.tsv`, a tab-separated file (.tsv) by default. All your log files (for each step of the SnoBIRD pipeline) will be located in the directory `workflow/logs/`, and a separate log file, `snoBIRD_usage.log`, will store the command line, parameters and packages' version you used for each completed SnoBIRD call.
 
 You can view as follows all the available options to modulate SnoBIRD usage:
 ```bash
