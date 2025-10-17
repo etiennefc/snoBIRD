@@ -297,10 +297,11 @@ else:  # predict on both strands
         neg_strand_results = predict(chr_dict_neg, seq_neg, window_size, batch_size, '-')
 
     # Correct for the actual start and ends of snoRNAs based on the first nt not the last (for - strand only)
-    neg_strand_results['start'] = len(seq_neg) - neg_strand_results['start'] + 1
-    neg_strand_results['end'] = len(seq_neg) - neg_strand_results['end'] + 1
-    # Switch start and end because it is the opposite on the - strand
-    neg_strand_results = neg_strand_results.rename(columns={'start': 'end', 'end': 'start'})
+    if len(seq_neg) > window_size:
+        neg_strand_results['start'] = len(seq_neg) - neg_strand_results['start'] + 1
+        neg_strand_results['end'] = len(seq_neg) - neg_strand_results['end'] + 1
+        # Switch start and end because it is the opposite on the - strand
+        neg_strand_results = neg_strand_results.rename(columns={'start': 'end', 'end': 'start'})
     neg_strand_results = neg_strand_results[df_cols]
     results_df = pd.concat([pos_strand_results, neg_strand_results]).sort_values(by=['start', 'end']).reset_index(drop=True)
     end_time = time.time()
